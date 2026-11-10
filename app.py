@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from lanisapi import LanisClient, LanisAccount
 from lanisapi.exceptions import WrongCredentialsError
 from lanisapi.helpers.request import Request
+import lanisapi.client as _lc
 
 E = os.environ
 TZ = ZoneInfo("Europe/Berlin")
@@ -44,6 +45,21 @@ def pick(o, fields):
         out[f] = v.isoformat() if hasattr(v, "isoformat") else v
     return out
 
+
+def _get_sid(url, cookies, schoolid):
+    """Ersatz für lanisapi.get_authentication_sid: das Schulportal hat das Cookie-Format geändert
+    (die Bibliothek wirft IndexError und schreibt zudem die Session-ID ins Log)."""
+    r = Request.head(url, cookies=cookies)
+    m = re.search(r"\bsid=([0-9a-fA-F]+)", r.headers.get("set-cookie") or "")
+    if not m:
+        raise WrongCredentialsError("Keine Sitzung erhalten")
+    ck = httpx.Cookies()
+    ck.set("i", schoolid)
+    ck.set("sid", m.group(1))
+    return ck
+
+
+_lc.get_authentication_sid = _get_sid
 
 LOCK = threading.Lock()  # lanisapi nutzt globalen Zustand -> immer nur ein Nutzer gleichzeitig
 
