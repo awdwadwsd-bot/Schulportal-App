@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Schulportal Hessen Reimagined · by Lxkas</title>
+<title>Schulportal Hessen Reimagined · by Lukas</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
 <style>
-:root{color-scheme:light;--paper:#f3f6fb;--ink:#17263c;--text:#233047;--mute:#738197;--card:#fff;--line:#e5ebf3;--accent:#5d6df5;--accent-soft:#edf0ff;--red:#d94656}
+:root{color-scheme:light;--paper:#f3f6fb;--ink:#17263c;--text:#233047;--mute:#738197;--card:#fff;--line:#e5ebf3;--input-line:#dbe2ee;--accent:#5d6df5;--accent-soft:#edf0ff;--red:#d94656;--glow:#e7eaff;--soft-text:#405069;--header:#f8f9fc;--nav:#ffffffed;--double:#f3f4ff;--double-line:#d8defe;--notice:#f2f7ff;--notice-line:#dae7ff;--notice-text:#405878;--exam:#fffafb;--exam-line:#ffd5d9}
+:root[data-theme="dark"]{color-scheme:dark;--paper:#080b18;--ink:#f4f6ff;--text:#d8def1;--mute:#9aa5c0;--card:#141928;--line:#262e43;--input-line:#38425e;--accent:#8b91ff;--accent-soft:#202644;--red:#ff738a;--glow:#181c3e;--soft-text:#bdc6de;--header:#1b2233;--nav:#0e1322ed;--double:#1b2040;--double-line:#454d92;--notice:#171d2c;--notice-line:#303e5d;--notice-text:#c5d5f7;--exam:#271b2b;--exam-line:#653047}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;scroll-behavior:smooth}
-body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(ellipse at 80% -10%,#e7eaff 0,transparent 40%),var(--paper);padding:20px 0 calc(90px + env(safe-area-inset-bottom));min-height:100vh}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(ellipse at 80% -10%,var(--glow) 0,transparent 40%),var(--paper);padding:20px 0 calc(90px + env(safe-area-inset-bottom));min-height:100vh}
 main#app{max-width:1160px;margin:12px auto;padding:28px 36px 44px;min-height:calc(100vh - 40px)}
 h1{font-size:clamp(2rem,4vw,2.75rem);letter-spacing:-.055em;line-height:1.05;font-weight:800;margin:8px 0;color:var(--ink)}
 h2{font-size:1rem;letter-spacing:-.015em;margin:26px 0 10px;font-weight:750;color:var(--ink)}
@@ -17,33 +18,35 @@ h2{font-size:1rem;letter-spacing:-.015em;margin:26px 0 10px;font-weight:750;colo
 .row{display:flex;gap:12px;align-items:center;justify-content:space-between}
 .mark{background:var(--accent-soft);color:var(--accent);font-weight:750;padding:3px 8px;border-radius:8px}
 .tag{font-size:.82rem;color:var(--mute)}.late{color:var(--red);font-weight:700}
-.exam{border-color:#ffd5d9;background:#fffafb}.done{opacity:.5;text-decoration:line-through}
-input,textarea,button,select{font:inherit;color:var(--text);background:var(--card);border:1px solid #dbe2ee;border-radius:10px;padding:10px 12px}
+.exam{border-color:var(--exam-line);background:var(--exam)}.done{opacity:.5;text-decoration:line-through}
+input,textarea,button,select{font:inherit;color:var(--text);background:var(--card);border:1px solid var(--input-line);border-radius:10px;padding:10px 12px}
 input,textarea{width:100%}input:focus,textarea:focus{outline:3px solid #5d6df526;border-color:var(--accent)}
 textarea{min-height:145px;font-family:ui-monospace,monospace;font-size:.9rem}
 button{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:650;cursor:pointer;transition:transform .15s,filter .15s}
 button:hover{filter:brightness(.96);transform:translateY(-1px)}button.ghost{background:var(--accent-soft);color:var(--accent);border-color:transparent}
 button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid #b7c0ff;outline-offset:2px}
 form{display:grid;gap:9px;grid-template-columns:1fr 1fr}form .full{grid-column:1/-1}
-nav{position:fixed;z-index:10;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:5px;background:#ffffffed;backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
+nav{position:fixed;z-index:10;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:5px;background:var(--nav);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
 nav button{background:none;color:var(--mute);border:0;font-size:.74rem;display:grid;gap:3px;justify-items:center;padding:5px 12px;border-radius:12px}
 nav button span{font-size:1.25rem}nav button.on{color:var(--accent);background:var(--accent-soft);font-weight:800}
-.err{color:var(--red);font-weight:650;background:#fff2f3;border:1px solid #ffd4d8;border-radius:12px;padding:11px 14px}
-table{width:100%;border-collapse:collapse;min-width:680px}td,th{padding:11px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:.88rem;vertical-align:top}th{color:var(--mute);font-weight:650;background:#f8f9fc}
+.err{color:var(--red);font-weight:650;background:var(--exam);border:1px solid var(--exam-line);border-radius:12px;padding:11px 14px}
+table{width:100%;border-collapse:collapse;min-width:680px}td,th{padding:11px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:.88rem;vertical-align:top}th{color:var(--mute);font-weight:650;background:var(--header)}
 .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}
-.homework-text{white-space:pre-wrap;line-height:1.5;margin-top:10px;color:#405069}
+.homework-text{white-space:pre-wrap;line-height:1.5;margin-top:10px;color:var(--soft-text)}
 .lesson{display:flex;align-items:center;gap:12px}.lesson-main{min-width:0}.lesson-title{font-weight:750;color:var(--ink)}.lesson-meta{font-size:.8rem;color:var(--mute);margin-top:3px}
-.lesson.double{min-height:126px;padding:25px 22px;border-color:#d8defe;background:linear-gradient(125deg,#fff,#f3f4ff);box-shadow:0 9px 24px #3747b51a}.lesson.double .lesson-title{font-size:1.12rem}.lesson.double .mark{font-size:.9rem;padding:7px 10px}
-.notice{display:flex;align-items:flex-start;gap:10px;background:#f2f7ff;border:1px solid #dae7ff;color:#405878;border-radius:14px;padding:13px 16px;margin:2px 0 18px;line-height:1.45}.notice-icon{font-size:1.1rem}
-.brandbar{display:flex;align-items:center;gap:11px;margin:0 0 23px;color:var(--ink);font-weight:850;letter-spacing:-.035em}.brandbar svg{width:42px;height:42px;flex:none}.brandbar small{display:block;color:var(--mute);font-size:.72rem;font-weight:650;letter-spacing:.015em;margin-top:2px}
+.lesson.double{min-height:calc(74px * var(--lesson-duration,2));padding:22px;border-color:var(--double-line);background:linear-gradient(125deg,var(--card),var(--double));box-shadow:0 9px 24px #3747b51a}.lesson.double .lesson-title{font-size:1.12rem}.lesson.double .mark{font-size:.9rem;padding:7px 10px}
+.notice{display:flex;align-items:flex-start;gap:10px;background:var(--notice);border:1px solid var(--notice-line);color:var(--notice-text);border-radius:14px;padding:13px 16px;margin:2px 0 18px;line-height:1.45}.notice-icon{font-size:1.1rem}
+.brandbar{display:flex;align-items:center;gap:13px;margin:0 0 23px;color:var(--ink);font-weight:850;letter-spacing:-.035em}.brandbar svg{width:48px;height:48px;flex:none}.brandbar small{display:block;color:var(--mute);font-size:.78rem;font-weight:650;letter-spacing:.015em;margin-top:2px}.brandbar small b{color:var(--accent)}.brandbar small i{font-style:normal;font-weight:550;margin-left:5px}
+.profile-grid{display:grid;grid-template-columns:2fr 1fr;gap:18px}.profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.profile-field{border:1px solid var(--line);border-radius:12px;padding:12px 14px}.profile-field small{display:block;color:var(--mute);margin-bottom:3px}.status-good{color:#37d892;font-weight:750}.theme-button{width:100%;text-align:left}
 #login{max-width:500px;margin:26px auto;padding:22px}#login~.tag{max-width:500px;margin:0 auto;text-align:center}
 @media(min-width:900px){body{padding:24px 0 24px 240px}main#app{margin:0 auto;min-height:100vh}
 nav{top:0;bottom:0;right:auto;width:220px;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:7px;padding:28px 16px;border-top:0;border-right:1px solid var(--line)}
-nav:before{content:"";height:74px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 74'%3E%3Crect x='12' y='9' width='42' height='42' rx='13' fill='%235d6df5'/%3E%3Cpath d='M22 29h22M25 22h16v18H25z' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ctext x='64' y='28' font-family='Arial' font-weight='700' font-size='14' fill='%2317263c'%3ESchulportal Hessen%3C/text%3E%3Ctext x='64' y='45' font-family='Arial' font-size='11' fill='%23738197'%3EReimagined %C2%B7 by Lxkas%3C/text%3E%3C/svg%3E");background-repeat:no-repeat;background-size:100% auto;margin-bottom:8px}
+nav:before{content:"";height:74px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 74'%3E%3Crect x='12' y='9' width='42' height='42' rx='13' fill='%235d6df5'/%3E%3Cpath d='M22 29h22M25 22h16v18H25z' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ctext x='64' y='28' font-family='Arial' font-weight='700' font-size='14' fill='%23f4f6ff'%3ESchulportal Hessen%3C/text%3E%3Ctext x='64' y='45' font-family='Arial' font-size='11' fill='%238b91ff'%3EReimagined %C2%B7 by Lukas%3C/text%3E%3C/svg%3E");background-repeat:no-repeat;background-size:100% auto;margin-bottom:8px}
 nav button{display:flex;align-items:center;justify-content:flex-start;gap:12px;text-align:left;font-size:.9rem;padding:11px 12px}
 nav button span{font-size:1.1rem;width:23px;text-align:center}}
 @media(max-width:640px){body{padding-top:10px}main#app{padding:20px 16px 28px}.card{padding:14px;border-radius:14px}
-nav{justify-content:space-around}nav:before{display:none}nav button{padding:5px 7px;font-size:.65rem}nav button span{font-size:1.18rem}
+nav{justify-content:flex-start;overflow-x:auto}nav:before{display:none}nav button{flex:0 0 auto;padding:5px 7px;font-size:.65rem}nav button span{font-size:1.18rem}
+ .profile-grid{grid-template-columns:1fr}.profile-fields{grid-template-columns:1fr 1fr}
 form{grid-template-columns:1fr}form .full{grid-column:auto}#login{margin:16px auto;padding:18px}}
 </style>
 </head>
@@ -57,10 +60,11 @@ const DAYS=['Mo','Di','Mi','Do','Fr'];
 const SUBJECTS={D:'Deutsch',DE:'Deutsch',E:'Englisch',EN:'Englisch',M:'Mathematik',MA:'Mathematik',BI:'Biologie',BIO:'Biologie',CH:'Chemie',CHE:'Chemie',PH:'Physik',PHY:'Physik',POWI:'Politik und Wirtschaft',PW:'Politik und Wirtschaft',MU:'Musik',MUS:'Musik',SPO:'Sport',SP:'Sport',L:'Latein',LA:'Latein',F:'Französisch',FR:'Französisch',SPA:'Spanisch',SPA2:'Spanisch',KU:'Kunst',KUN:'Kunst',REV:'Religion evangelisch',REV1:'Religion evangelisch',KAT:'Religion katholisch',ETH:'Ethik',G:'Geschichte',GE:'Geschichte',EK:'Erdkunde',ER:'Erdkunde',INF:'Informatik',IT:'Informatik',WPU:'Wahlpflichtunterricht',KL:'Klassenleitung',KLS:'Klassenlehrerstunde'};
 const subjectName=s=>{const raw=String(s||'').trim(),whole=SUBJECTS[raw.toUpperCase()];if(whole)return whole;const m=raw.match(/^([A-Za-z0-9]+)(\s+.*)$/);return m&&SUBJECTS[m[1].toUpperCase()]?SUBJECTS[m[1].toUpperCase()]+m[2]:raw};
 const subjectKey=s=>{let v=subjectName(s).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(/^(MATHE|MATHEMATIK|MATH)\b/.test(v))return'MATHEMATIK';if(/^DEUTSCH\b/.test(v))return'DEUTSCH';if(/^ENGLISCH\b/.test(v))return'ENGLISCH';if(/^BIOLOGIE\b/.test(v))return'BIOLOGIE';if(/^CHEMIE\b/.test(v))return'CHEMIE';if(/^SPANISCH\b/.test(v))return'SPANISCH';if(/^FRANZOESISCH\b/.test(v))return'FRANZOESISCH';return v};
-const brand='<div class="brandbar"><svg viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="15" fill="#5d6df5"/><path d="M12 22h24M15 16h18v20H15z" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 36V26h6v10" fill="none" stroke="white" stroke-width="2.8" stroke-linejoin="round"/></svg><span>Schulportal Hessen<small>Reimagined · by Lxkas</small></span></div>';
-const TABS=[['heute','🏠','Heute'],['plan','📅','Plan'],['ha','📚','Aufgaben'],['vertretung','🔄','Vertretung'],['kal','🗓️','Kalender'],['set','⚙️','Mehr']];
+const brand='<div class="brandbar"><svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="logoGradient" x1="4" y1="4" x2="44" y2="44"><stop stop-color="#6575ff"/><stop offset="1" stop-color="#3828d9"/></linearGradient></defs><rect width="48" height="48" rx="15" fill="url(#logoGradient)"/><path d="m10 19 14-8 14 8M13 21v17h22V21M19 38V27h10v11M15 23h18" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Schulportal Hessen<small><b>Reimagined</b><i>by Lukas</i></small></span></div>';
+const TABS=[['heute','🏠','Heute'],['plan','📅','Plan'],['ha','📚','Aufgaben'],['arbeiten','📝','Arbeiten'],['vertretung','🔄','Vertretung'],['kal','🗓️','Kalender'],['benutzer','👤','Benutzer']];
 let T=localStorage.getItem('t'),tab='heute',D=null,err='';
 let S=JSON.parse(localStorage.getItem('S')||'null')||{updated:1,manual:[],due:{},done:[],remindTime:'17:00',tt:'',ntfy:'hw-'+Math.random().toString(36).slice(2,14),discord:''};
+let theme=localStorage.getItem('theme')||'dark';document.documentElement.dataset.theme=theme;
 
 const iso=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')};
 const today=()=>iso(new Date());
@@ -86,13 +90,14 @@ function ttDay(k){
   const names={Mo:'Montag',Di:'Dienstag',Mi:'Mittwoch',Do:'Donnerstag',Fr:'Freitag'};
   const entries=(D?.timetable?.entries||[]).filter(e=>e.day===names[k]);
   const seen=new Set();
-  const automatic=entries.filter(e=>{const key=[e.hour,e.time,e.subject,e.room,e.teacher].join('|');if(seen.has(key))return false;seen.add(key);return true;}).map(e=>({h:Number.parseInt(e.hour,10)||e.hour,fach:e.subject,raum:e.room,time:e.time,teacher:e.teacher}));
+  const automatic=entries.filter(e=>{const key=[e.hour,e.time,e.subject,e.room,e.teacher].join('|');if(seen.has(key))return false;seen.add(key);return true;}).map(e=>({h:Number.parseInt(e.hour,10)||e.hour,fach:e.subject,raum:e.room,time:e.time,teacher:e.teacher,duration:Number.parseInt(e.duration,10)||1}));
   if(automatic.length)return automatic;
   return S.tt.split('\n').map(l=>l.trim().match(/^(Mo|Di|Mi|Do|Fr)\s+(\d+)\s+(.+?)(?:\s+(\S+))?$/i)).filter(m=>m&&m[1].toLowerCase()==k.toLowerCase()).map(m=>({h:+m[2],fach:m[3],raum:m[4]||'',time:''})).sort((a,b)=>Number.parseInt(a.h,10)-Number.parseInt(b.h,10));
 }
-function nextLessonDate(subject){const names={Montag:0,Dienstag:1,Mittwoch:2,Donnerstag:3,Freitag:4};const wanted=subjectKey(subject);let best=null;for(const e of D?.timetable?.entries||[]){if(subjectKey(e.subject)!==wanted)continue;const wd=names[e.day];if(wd===undefined)continue;const now=new Date(),delta=(wd-(now.getDay()+6)%7+7)%7,d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()+delta);if(delta===0){const end=String(e.time||'').match(/-\s*(\d{1,2}):(\d{2})/);if(end&&now.getHours()*60+now.getMinutes()>=Number(end[1])*60+Number(end[2]))d.setDate(d.getDate()+7)}if(!best||d<best)best=d}return best?iso(best):''}
-function groupLessons(list){const sorted=[...list].sort((a,b)=>Number.parseInt(a.h,10)-Number.parseInt(b.h,10)),out=[];for(const x of sorted){const p=out[out.length-1],same=p&&p.fach===x.fach&&p.raum===x.raum&&p.teacher===x.teacher&&Number.parseInt(x.h,10)===Number.parseInt(p.lastH,10)+1;if(same){p.lastH=x.h;p.endTime=(x.time||'').split(' - ').pop()||p.endTime;p.double=true}else out.push({...x,lastH:x.h,endTime:(x.time||'').split(' - ').pop()||''})}return out}
-const lessons=l=>{const grouped=groupLessons(l);return grouped.length?grouped.map(x=>'<div class="card lesson '+(x.double?'double':'')+'"><span class="mark">'+(x.double?esc(x.h)+'.–'+esc(x.lastH)+'. Stunde':esc(x.h)+'. Stunde')+'</span><div class="lesson-main"><div class="lesson-title">'+esc(subjectName(x.fach))+'</div><div class="lesson-meta">'+(x.time?esc(x.time.split(' - ')[0]+' - '+(x.double?x.endTime:x.time.split(' - ').pop())):'')+[x.teacher].filter(Boolean).map(esc).join(' · ')+(x.raum?' · Raum '+esc(x.raum):'')+'</div></div></div>').join(''):'<p class="sub">Kein Plan für diesen Tag hinterlegt.</p>'};
+function nextLessonDate(subject){const names={Montag:0,Dienstag:1,Mittwoch:2,Donnerstag:3,Freitag:4};const wanted=subjectKey(subject);let best=null;for(const e of D?.timetable?.entries||[]){if(subjectKey(e.subject)!==wanted)continue;const wd=names[e.day];if(wd===undefined)continue;const now=new Date(),delta=(wd-(now.getDay()+6)%7+7)%7,d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()+delta);if(delta===0){const times=String(e.time||'').match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);if(times){const start=Number(times[1])*60+Number(times[2]),end=Number(times[3])*60+Number(times[4]),lessonEnd=end+(end-start)*(Math.max(1,Number(e.duration)||1)-1);if(now.getHours()*60+now.getMinutes()>=lessonEnd)d.setDate(d.getDate()+7)}}if(!best||d<best)best=d}return best?iso(best):''}
+function groupLessons(list){const sorted=[...list].sort((a,b)=>Number.parseInt(a.h,10)-Number.parseInt(b.h,10)),out=[];for(const x of sorted){const start=Number.parseInt(x.h,10),duration=Math.max(1,Number.parseInt(x.duration,10)||1),p=out[out.length-1],same=p&&p.fach===x.fach&&p.raum===x.raum&&p.teacher===x.teacher&&start===p.endHour+1&&p.duration===1;if(same){p.endHour=start+duration-1;p.duration+=duration;p.double=p.duration>1;p.endTime=(x.time||'').split(' - ').pop()||p.endTime}else out.push({...x,startHour:start,endHour:start+duration-1,duration,double:duration>1})}return out}
+function lessonTime(x){if(!x.time)return'';const [start,end]=x.time.split(' - ');if(!x.double)return x.time;const a=start.split(':').map(Number),b=end.split(':').map(Number),minutes=(b[0]*60+b[1]-a[0]*60-a[1])*x.duration+ a[0]*60+a[1],finish=String(Math.floor(minutes/60)%24).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0');return start+' - '+finish}
+const lessons=l=>{const grouped=groupLessons(l);return grouped.length?grouped.map(x=>'<div class="card lesson '+(x.double?'double':'')+'"'+(x.double?' style="--lesson-duration:'+x.duration+'"':'')+'><span class="mark">'+(x.double?esc(x.startHour)+'.–'+esc(x.endHour)+'. Stunde':esc(x.startHour)+'. Stunde')+'</span><div class="lesson-main"><div class="lesson-title">'+esc(subjectName(x.fach))+'</div><div class="lesson-meta">'+[lessonTime(x),x.teacher,x.raum?'Raum '+x.raum:''].filter(Boolean).map(esc).join(' · ')+'</div></div></div>').join(''):'<p class="sub">Kein Plan für diesen Tag hinterlegt.</p>'};
 const hw=h=>`<div class="card"><div class="row"><label class="${S.done.includes(h.id)?'done':''}"><input type="checkbox" style="width:auto" ${S.done.includes(h.id)?'checked':''} data-done="${h.id}"> <b>${esc(h.title)}</b></label>
 ${h.manual?`<button class="ghost" data-del="${h.id}" aria-label="Löschen">✕</button>`:''}</div>
 <div class="tag">${esc(subjectName(h.subj))||'–'} · ${rel(h.due)}</div>
@@ -127,12 +132,14 @@ kal(){
     const x=/arbeit|klausur|test|lernkontrolle/i.test(e.title);
     return `<div class="card ${x?'exam':''}"><div class="row"><b>${x?'🚨 ':''}${esc(e.title)}</b><span class="tag">${rel(iso(e.start))}</span></div><div class="tag">${fmt(e.start)}${e.place?' · '+esc(e.place):''}</div></div>`}).join('')||'<p class="sub">Keine Termine.</p>');
 },
-set(){return `<h1>Mehr</h1>
+arbeiten(){const exams=(D?.cal||[]).filter(e=>days(iso(e.start))>=0&&/arbeit|klassenarbeit|klausur|test|lernkontrolle|prüfung|pruefung/i.test(e.title||'')).sort((a,b)=>String(a.start).localeCompare(String(b.start)));return `<h1>Arbeiten</h1><p class="sub">Deine nächsten Klassenarbeiten, Tests und Lernkontrollen.</p>`+(exams.map(e=>`<div class="card exam"><div class="row"><b>📝 ${esc(e.title)}</b><span class="tag">${rel(iso(e.start))}</span></div><div class="tag">${fmt(e.start)}${e.place?' · '+esc(e.place):''}</div></div>`).join('')||'<p class="sub">Im Kalender stehen noch keine kommenden Arbeiten.</p>')},
+benutzer(){const p=D?.profile||{},field=(label,value)=>`<div class="profile-field"><small>${label}</small><b>${esc(value||'Nicht verfügbar')}</b></div>`;return `<h1>Benutzer</h1><p class="sub">Dein Schulportal-Konto und deine App-Einstellungen.</p><div class="profile-grid"><section class="card"><div class="row" style="justify-content:flex-start;margin-bottom:16px"><span class="mark" style="font-size:1.5rem;padding:12px">👤</span><div><b>Schüler / Student</b><div class="tag">Schulportal-Konto</div></div></div><div class="profile-fields">${field('Login',p.username)}${field('Schulnummer',p.school_id)}${field('Klasse',p.class_name)}${field('Angemeldet',D?'Ja':'Nein')}</div></section><aside><div class="card"><b>🛡️ Sicherheit</b><p class="row"><span class="tag">Token-Verschlüsselung</span><span class="status-good">Aktiv</span></p><p class="row"><span class="tag">Portal-Sitzung</span><span class="status-good">${D?'Aktiv':'Nicht verbunden'}</span></p></div><div class="card"><b>API-Status</b><p class="row"><span class="tag">Verbindung</span><span class="status-good">${D?'Verbunden':'Getrennt'}</span></p><p class="row"><span class="tag">Letzter Abruf</span><span class="tag">${D?.fetched?new Date(D.fetched).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'–'}</span></p></div></aside></div>
+  <h2>Darstellung</h2><div class="card"><button id="themeToggle" class="ghost theme-button">${theme==='dark'?'☀️ Helles Design einschalten':'🌙 Dunkles Design einschalten'}</button></div>
   <h2>Erinnerung</h2><div class="card row"><span>Am Vortag um</span><input type="time" style="width:auto" id="rt" value="${S.remindTime}"></div>
   <p class="tag">Push aufs Handy: App „ntfy“ installieren und dieses Thema abonnieren (nicht weitergeben).</p><input id="nt" value="${esc(S.ntfy)}" placeholder="ntfy-Thema"><input id="dc" style="margin-top:8px" value="${esc(S.discord)}" placeholder="Discord-Webhook (optional)">
   <h2>Stundenplan</h2><p class="tag">${(D?.timetable?.entries||[]).length?'Der Plan wird automatisch aus dem Schulportal geladen. Der eigene Text dient nur als Ersatz.':'Noch kein automatischer Portalplan verfügbar. Hier kannst du einen Ersatzplan eintragen.'} Format: <code>Mo 1 Mathe A12</code></p>
   <textarea id="tt" placeholder="Mo 1 Mathe A12&#10;Mo 2 Deutsch B05&#10;Di 1 Englisch C01">${esc(S.tt)}</textarea>
-  <div class="row" style="margin-top:10px"><button id="sv">Speichern</button><button class="ghost" id="rf">Portal neu laden</button><button class="ghost" id="lo">Abmelden</button></div>`}
+  <div class="row" style="margin-top:10px"><button id="sv">Einstellungen speichern</button><button class="ghost" id="rf">Portal neu laden</button><button class="ghost" id="lo">Abmelden</button></div>`}
 };
 
 function render(){
@@ -145,6 +152,7 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('[data-tab]');if(t){tab=t.dataset.tab;return render()}
   const d=e.target.closest('[data-del]');if(d){S.manual=S.manual.filter(h=>h.id!=d.dataset.del);return save()}
   if(e.target.id=='sv'){S.remindTime=$('#rt').value||'17:00';S.tt=$('#tt').value;S.ntfy=$('#nt').value.trim();S.discord=$('#dc').value.trim();return save()}
+  if(e.target.id==='themeToggle'){theme=theme==='dark'?'light':'dark';localStorage.setItem('theme',theme);document.documentElement.dataset.theme=theme;return render()}
   if(e.target.id=='rf')return load(true);
   if(e.target.id=='lo'){localStorage.clear();location.reload()}
 });
