@@ -7,6 +7,7 @@ from cryptography.fernet import Fernet
 from fastapi import FastAPI, Header, HTTPException, Body, Depends
 from fastapi.responses import FileResponse
 from pylanis import Lanis
+from pylanis.lanisapi import substitution as lanis_substitution
 from pylanis.lanisapi.exceptions import WrongCredentialsError
 
 E = os.environ
@@ -229,6 +230,45 @@ async def data(refresh: bool = False, p: dict = Depends(auth)):
         "class_name": (d.get("timetable") or {}).get("class_name", ""),
     }
     return out
+
+
+@app.get("/api/substitution")
+async def substitution_for_day(date: str, p: dict = Depends(auth)):
+    """Load the substitution plan for a selected day (not only the current day)."""
+    try:
+        selected = dt.date.fromisoformat(date)
+    except ValueError:
+        raise HTTPException(400, "Datum muss im Format JJJJ-MM-TT angegeben werden")
+    day = selected.strftime("%d.%m.%Y")
+
+    def fetch_selected(c):
+        client = c._client  # Lanis currently exposes only the current-day wrapper.
+        if client is None:
+            raise RuntimeError("Schulportal-Sitzung ist nicht initialisiert")
+        client._require_app("Vertretungsplan")
+        page = client._call(lambda: lanis_substitution.fetch_page(client.session))
+        _, notice = lanis_substitution.parse_info(page)
+        raw = client._call(lambda: lanis_substitution.fetch_substitutions(client.session, day))
+        if raw == lanis_substitution.NO_PERMISSION_FOR_WHOLE_PLAN:
+            try:
+                raw = lanis_substitution.parse_own_entries(page, day)
+            except Exception:
+                # Students may only receive their own entries for the current
+                # day in the HTML view. A future day can still be requested
+                # when the school's endpoint allows the whole plan.
+                raw = []
+        plan = lanis_substitution.parse_plan(raw, day, notice)
+        return {
+            "date": plan.date.isoformat() if plan.date else selected.isoformat(),
+            "info": plan.info,
+            "items": [pick(s, ["hours", "class_name", "subject", "teacher", "substitute", "room", "notice"]) for s in plan.substitutions],
+        }
+
+    try:
+        return await asyncio.to_thread(run, p, fetch_selected)
+    except Exception as ex:
+        print("FETCH Vertretung FAIL:", traceback.format_exc(), flush=True)
+        raise HTTPException(502, f"Vertretungsplan konnte nicht geladen werden ({type(ex).__name__})")
 
 
 @app.get("/api/state")
