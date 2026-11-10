@@ -147,7 +147,7 @@ document.addEventListener('submit',async e=>{
     if(!f.school){err='Bitte deine Schule aus der Liste wählen';return loginView()}
     try{
       const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(f)});
-      if(!r.ok)throw new Error(r.status==403?'Einladungscode falsch':'Anmeldung fehlgeschlagen – Schulnummer, Name und Passwort prüfen');
+      if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(r.status==403?'Einladungscode falsch':(j.detail||'Anmeldung fehlgeschlagen'))}
       T=(await r.json()).token;localStorage.setItem('t',T);return init();
     }catch(x){err=x.message;return loginView()}
   }

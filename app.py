@@ -1,4 +1,4 @@
-import os, re, json, time, asyncio, hashlib, datetime as dt
+import os, re, json, time, asyncio, hashlib, threading, datetime as dt
 from contextlib import asynccontextmanager
 from zoneinfo import ZoneInfo
 
@@ -7,6 +7,7 @@ from cryptography.fernet import Fernet
 from fastapi import FastAPI, Header, HTTPException, Body, Depends
 from fastapi.responses import FileResponse
 from lanisapi import LanisClient, LanisAccount
+from lanisapi.exceptions import WrongCredentialsError
 
 E = os.environ
 TZ = ZoneInfo("Europe/Berlin")
@@ -43,35 +44,50 @@ def pick(o, fields):
     return out
 
 
-def client(p):
-    c = LanisClient(LanisAccount(p["s"], p["n"], p["p"]))
-    c.authenticate()
-    return c
+LOCK = threading.Lock()  # lanisapi nutzt globalen Zustand -> immer nur ein Nutzer gleichzeitig
 
 
-def fetch(p):
-    c = client(p)
-    try:
-        now = dt.datetime.now(TZ).replace(tzinfo=None)
-        tasks = []
-        for t in c.get_tasks():
-            d = pick(t, ["title", "date", "subject_name", "teacher", "description", "details"])
-            d["id"] = hashlib.sha1(f"{d['title']}{d['date']}{d['subject_name']}".encode()).hexdigest()[:12]
-            tasks.append(d)
-        plan = c.get_substitution_plan()
-        cal = c.get_calendar(now - dt.timedelta(days=7), now + dt.timedelta(days=90))
-        return {
-            "fetched": now.isoformat(),
-            "tasks": tasks,
-            "sub": {
-                "date": plan.date.isoformat() if plan.date else None,
-                "info": plan.info,
-                "items": [pick(s, ["hours", "class_name", "subject", "teacher", "substitute", "room", "notice"]) for s in plan.substitutions],
-            },
-            "cal": [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in cal.events],
-        }
-    finally:
-        c.close()
+def run(p, fn):
+    """Frisch einloggen, fn(client) ausführen, danach alles aufräumen (keine Session-Reste zwischen Nutzern)."""
+    with LOCK:
+        c = None
+        try:
+            if os.path.exists("session.json"):
+                os.remove("session.json")
+            c = LanisClient(LanisAccount(p["s"], p["n"], p["p"]))
+            c.authenticate(force=True)
+            if not c.authenticated:
+                raise WrongCredentialsError("Login fehlgeschlagen")
+            return fn(c)
+        finally:
+            if c:
+                try:
+                    c.close()
+                except Exception:
+                    pass
+            if os.path.exists("session.json"):
+                os.remove("session.json")
+
+
+def fetch(c):
+    now = dt.datetime.now(TZ).replace(tzinfo=None)
+    tasks = []
+    for t in c.get_tasks():
+        d = pick(t, ["title", "date", "subject_name", "teacher", "description", "details"])
+        d["id"] = hashlib.sha1(f"{d['title']}{d['date']}{d['subject_name']}".encode()).hexdigest()[:12]
+        tasks.append(d)
+    plan = c.get_substitution_plan()
+    cal = c.get_calendar(now - dt.timedelta(days=7), now + dt.timedelta(days=90))
+    return {
+        "fetched": now.isoformat(),
+        "tasks": tasks,
+        "sub": {
+            "date": plan.date.isoformat() if plan.date else None,
+            "info": plan.info,
+            "items": [pick(s, ["hours", "class_name", "subject", "teacher", "substitute", "room", "notice"]) for s in plan.substitutions],
+        },
+        "cal": [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in cal.events],
+    }
 
 
 async def notify(s, msg):
@@ -159,10 +175,12 @@ async def login(b: dict = Body(...)):
         raise HTTPException(403)
     school, user, pw = str(b.get("school", "")).strip(), str(b.get("username", "")).strip(), str(b.get("password", ""))
     try:
-        c = await asyncio.to_thread(client, {"s": school, "n": user, "p": pw})
-        await asyncio.to_thread(c.close)
-    except Exception:
-        raise HTTPException(401)
+        await asyncio.to_thread(run, {"s": school, "n": user, "p": pw}, lambda c: None)
+    except Exception as ex:
+        print("LOGIN FAIL:", type(ex).__name__, ex, flush=True)
+        if isinstance(ex, WrongCredentialsError):
+            raise HTTPException(401, "Schulnummer, Name oder Passwort stimmt nicht")
+        raise HTTPException(502, f"Schulportal nicht erreichbar ({type(ex).__name__})")
     uid = hashlib.sha1(f"{school}:{user.lower()}".encode()).hexdigest()[:16]
     tok = F.encrypt(json.dumps({"u": uid, "s": school, "n": user, "p": pw}).encode()).decode()
     return {"token": tok}
@@ -173,7 +191,7 @@ async def data(refresh: bool = False, p: dict = Depends(auth)):
     t, d = cache.get(p["u"], (0, None))
     if refresh or not d or time.time() - t > 600:
         try:
-            d = await asyncio.to_thread(fetch, p)
+            d = await asyncio.to_thread(run, p, fetch)
         except Exception as ex:
             raise HTTPException(502, f"Schulportal: {ex}")
         cache[p["u"]] = (time.time(), d)
