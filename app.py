@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from zoneinfo import ZoneInfo
 
 import httpx
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from fastapi import FastAPI, Header, HTTPException, Body, Depends
 from fastapi.responses import FileResponse
 from pylanis import Lanis
@@ -18,22 +18,39 @@ cache = {}  # uid -> (zeit, daten)
 HOOK = re.compile(r"^https://(discord|discordapp)\.com/api/webhooks/\d+/[\w-]+$")
 TOPIC = re.compile(r"^[A-Za-z0-9_-]{6,64}$")
 BLOG_KEY = "__blog_posts__"
+PRIVACY_KEY = "__privacy_acceptances__"
+POLICY_VERSION = "2026-11-10-v1"
 STATE_LOCK = threading.RLock()
 
 
 def db():
     with STATE_LOCK:
         try:
-            with open(STATE, encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
+            with open(STATE, "rb") as f:
+                raw = f.read()
+        except OSError:
+            return {}
+        try:
+            return json.loads(F.decrypt(raw).decode("utf-8"))
+        except InvalidToken:
+            # Migrate the existing plaintext JSON file on first read.
+            try:
+                legacy = json.loads(raw.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                return {}
+            save_db(legacy)
+            return legacy
+        except (UnicodeDecodeError, json.JSONDecodeError):
             return {}
 
 
 def save_db(d):
     with STATE_LOCK:
-        with open(STATE, "w", encoding="utf-8") as f:
-            json.dump(d, f, ensure_ascii=False)
+        encrypted = F.encrypt(json.dumps(d, ensure_ascii=False).encode("utf-8"))
+        temporary = STATE + ".tmp"
+        with open(temporary, "wb") as f:
+            f.write(encrypted)
+        os.replace(temporary, STATE)
 
 
 def is_admin(p):
@@ -65,11 +82,19 @@ def post_input(b):
     return {"title": title, "summary": summary, "body": body, "published": bool(b.get("published", False))}
 
 
-def auth(x_token: str = Header("")):
+def decode_token(x_token: str):
     try:
         return json.loads(F.decrypt(x_token.encode(), ttl=90 * 86400))
     except Exception:
         raise HTTPException(401)
+
+
+def auth(x_token: str = Header("")):
+    p = decode_token(x_token)
+    accepted = db().get(PRIVACY_KEY, {}).get(p["u"], {})
+    if accepted.get("version") != POLICY_VERSION:
+        raise HTTPException(428, "Bitte bestätige zuerst die aktuelle Datenschutzerklärung")
+    return p
 
 
 def pick(o, fields):
@@ -226,6 +251,31 @@ def pwa_icon():
     return FileResponse(Path(__file__).resolve().parent / "icon.svg", media_type="image/svg+xml", headers={"Cache-Control": "public, max-age=86400"})
 
 
+@app.get("/datenschutz")
+def privacy_page():
+    from pathlib import Path
+    return FileResponse(Path(__file__).resolve().parent / "privacy.html", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/api/privacy/status")
+def privacy_status(x_token: str = Header("")):
+    p = decode_token(x_token)
+    accepted = db().get(PRIVACY_KEY, {}).get(p["u"], {})
+    return {"accepted": accepted.get("version") == POLICY_VERSION, "version": POLICY_VERSION}
+
+
+@app.post("/api/privacy/accept")
+def accept_privacy(b: dict = Body(...), x_token: str = Header("")):
+    if b.get("accepted") is not True:
+        raise HTTPException(400, "Die Bestätigung ist erforderlich")
+    p = decode_token(x_token)
+    d = db()
+    records = d.setdefault(PRIVACY_KEY, {})
+    records[p["u"]] = {"version": POLICY_VERSION, "accepted_at": dt.datetime.now(TZ).isoformat()}
+    save_db(d)
+    return {"ok": True, "version": POLICY_VERSION}
+
+
 @app.get("/ping")
 def ping():
     return "ok"
@@ -304,6 +354,8 @@ async def schools(q: str = ""):
 
 @app.post("/api/login")
 async def login(b: dict = Body(...)):
+    if b.get("privacy_accepted") is not True:
+        raise HTTPException(428, "Bitte lies und bestätige die Datenschutzerklärung")
     if E.get("INVITE_CODE") and b.get("invite") != E["INVITE_CODE"]:
         raise HTTPException(403)
     school, user, pw = str(b.get("school", "")).strip(), str(b.get("username", "")).strip(), str(b.get("password", ""))
@@ -315,6 +367,10 @@ async def login(b: dict = Body(...)):
             raise HTTPException(401, "Schulnummer, Name oder Passwort stimmt nicht")
         raise HTTPException(502, f"Schulportal nicht erreichbar ({type(ex).__name__})")
     uid = hashlib.sha1(f"{school}:{user.lower()}".encode()).hexdigest()[:16]
+    d = db()
+    records = d.setdefault(PRIVACY_KEY, {})
+    records[uid] = {"version": POLICY_VERSION, "accepted_at": dt.datetime.now(TZ).isoformat()}
+    save_db(d)
     tok = F.encrypt(json.dumps({"u": uid, "s": school, "n": user, "p": pw}).encode()).decode()
     return {"token": tok}
 
