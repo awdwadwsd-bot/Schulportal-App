@@ -77,7 +77,9 @@ function items(){
 }
 function ttDay(k){
   const names={Mo:'Montag',Di:'Dienstag',Mi:'Mittwoch',Do:'Donnerstag',Fr:'Freitag'};
-  const automatic=(D?.timetable?.entries||[]).filter(e=>e.day===names[k]).map(e=>({h:e.hour,fach:e.subject,raum:e.room,time:e.time,teacher:e.teacher}));
+  const entries=(D?.timetable?.entries||[]).filter(e=>e.day===names[k]);
+  const seen=new Set();
+  const automatic=entries.filter(e=>{const key=[e.hour,e.time,e.subject,e.room,e.teacher].join('|');if(seen.has(key))return false;seen.add(key);return true;}).map(e=>({h:e.hour,fach:e.subject,raum:e.room,time:e.time,teacher:e.teacher}));
   if(automatic.length)return automatic;
   return S.tt.split('\n').map(l=>l.trim().match(/^(Mo|Di|Mi|Do|Fr)\s+(\d+)\s+(.+?)(?:\s+(\S+))?$/i)).filter(m=>m&&m[1].toLowerCase()==k.toLowerCase()).map(m=>({h:+m[2],fach:m[3],raum:m[4]||'',time:''})).sort((a,b)=>Number.parseInt(a.h,10)-Number.parseInt(b.h,10));
 }
