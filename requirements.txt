@@ -1,6 +1,7 @@
 fastapi
 uvicorn
-httpx
-lanisapi
+httpx==0.28.1
+pylanis==1.1.1
 cryptography
-selectolax<1.0
+pycryptodomex==3.24.2
+selectolax==1.0.2
