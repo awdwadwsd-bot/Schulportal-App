@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Schulportal</title>
+<title>Schulportal Hessen Reimagined · by Lxkas</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
 <style>
 :root{color-scheme:light;--paper:#f3f6fb;--ink:#17263c;--text:#233047;--mute:#738197;--card:#fff;--line:#e5ebf3;--accent:#5d6df5;--accent-soft:#edf0ff;--red:#d94656}
@@ -33,14 +33,17 @@ table{width:100%;border-collapse:collapse;min-width:680px}td,th{padding:11px 10p
 .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}
 .homework-text{white-space:pre-wrap;line-height:1.5;margin-top:10px;color:#405069}
 .lesson{display:flex;align-items:center;gap:12px}.lesson-main{min-width:0}.lesson-title{font-weight:750;color:var(--ink)}.lesson-meta{font-size:.8rem;color:var(--mute);margin-top:3px}
+.lesson.double{min-height:126px;padding:25px 22px;border-color:#d8defe;background:linear-gradient(125deg,#fff,#f3f4ff);box-shadow:0 9px 24px #3747b51a}.lesson.double .lesson-title{font-size:1.12rem}.lesson.double .mark{font-size:.9rem;padding:7px 10px}
+.notice{display:flex;align-items:flex-start;gap:10px;background:#f2f7ff;border:1px solid #dae7ff;color:#405878;border-radius:14px;padding:13px 16px;margin:2px 0 18px;line-height:1.45}.notice-icon{font-size:1.1rem}
+.brandbar{display:flex;align-items:center;gap:11px;margin:0 0 23px;color:var(--ink);font-weight:850;letter-spacing:-.035em}.brandbar svg{width:42px;height:42px;flex:none}.brandbar small{display:block;color:var(--mute);font-size:.72rem;font-weight:650;letter-spacing:.015em;margin-top:2px}
 #login{max-width:500px;margin:26px auto;padding:22px}#login~.tag{max-width:500px;margin:0 auto;text-align:center}
 @media(min-width:900px){body{padding:24px 0 24px 240px}main#app{margin:0 auto;min-height:100vh}
 nav{top:0;bottom:0;right:auto;width:220px;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:7px;padding:28px 16px;border-top:0;border-right:1px solid var(--line)}
-nav:before{content:"Lernplan";font-size:1.25rem;letter-spacing:-.04em;font-weight:850;color:var(--ink);padding:10px 12px 25px}
+nav:before{content:"";height:74px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 74'%3E%3Crect x='12' y='9' width='42' height='42' rx='13' fill='%235d6df5'/%3E%3Cpath d='M22 29h22M25 22h16v18H25z' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ctext x='64' y='28' font-family='Arial' font-weight='700' font-size='14' fill='%2317263c'%3ESchulportal Hessen%3C/text%3E%3Ctext x='64' y='45' font-family='Arial' font-size='11' fill='%23738197'%3EReimagined %C2%B7 by Lxkas%3C/text%3E%3C/svg%3E");background-repeat:no-repeat;background-size:100% auto;margin-bottom:8px}
 nav button{display:flex;align-items:center;justify-content:flex-start;gap:12px;text-align:left;font-size:.9rem;padding:11px 12px}
 nav button span{font-size:1.1rem;width:23px;text-align:center}}
 @media(max-width:640px){body{padding-top:10px}main#app{padding:20px 16px 28px}.card{padding:14px;border-radius:14px}
-nav{justify-content:space-around}nav button{padding:5px 7px;font-size:.65rem}nav button span{font-size:1.18rem}
+nav{justify-content:space-around}nav:before{display:none}nav button{padding:5px 7px;font-size:.65rem}nav button span{font-size:1.18rem}
 form{grid-template-columns:1fr}form .full{grid-column:auto}#login{margin:16px auto;padding:18px}}
 </style>
 </head>
@@ -51,6 +54,10 @@ form{grid-template-columns:1fr}form .full{grid-column:auto}#login{margin:16px au
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const DAYS=['Mo','Di','Mi','Do','Fr'];
+const SUBJECTS={D:'Deutsch',DE:'Deutsch',E:'Englisch',EN:'Englisch',M:'Mathematik',MA:'Mathematik',BI:'Biologie',BIO:'Biologie',CH:'Chemie',CHE:'Chemie',PH:'Physik',PHY:'Physik',POWI:'Politik und Wirtschaft',PW:'Politik und Wirtschaft',MU:'Musik',MUS:'Musik',SPO:'Sport',SP:'Sport',L:'Latein',LA:'Latein',F:'Französisch',FR:'Französisch',SPA:'Spanisch',SPA2:'Spanisch',KU:'Kunst',KUN:'Kunst',REV:'Religion evangelisch',REV1:'Religion evangelisch',KAT:'Religion katholisch',ETH:'Ethik',G:'Geschichte',GE:'Geschichte',EK:'Erdkunde',ER:'Erdkunde',INF:'Informatik',IT:'Informatik',WPU:'Wahlpflichtunterricht',KL:'Klassenleitung'};
+const subjectName=s=>{const raw=String(s||'').trim();return SUBJECTS[raw.toUpperCase()]||raw};
+const subjectKey=s=>{let v=subjectName(s).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(/^(MATHE|MATHEMATIK|MATH)\b/.test(v))return'MATHEMATIK';if(/^DEUTSCH\b/.test(v))return'DEUTSCH';if(/^ENGLISCH\b/.test(v))return'ENGLISCH';if(/^BIOLOGIE\b/.test(v))return'BIOLOGIE';if(/^CHEMIE\b/.test(v))return'CHEMIE';if(/^SPANISCH\b/.test(v))return'SPANISCH';if(/^FRANZOESISCH\b/.test(v))return'FRANZOESISCH';return v};
+const brand='<div class="brandbar"><svg viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="15" fill="#5d6df5"/><path d="M12 22h24M15 16h18v20H15z" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 36V26h6v10" fill="none" stroke="white" stroke-width="2.8" stroke-linejoin="round"/></svg><span>Schulportal Hessen<small>Reimagined · by Lxkas</small></span></div>';
 const TABS=[['heute','🏠','Heute'],['plan','📅','Plan'],['ha','📚','Aufgaben'],['vertretung','🔄','Vertretung'],['kal','🗓️','Kalender'],['set','⚙️','Mehr']];
 let T=localStorage.getItem('t'),tab='heute',D=null,err='';
 let S=JSON.parse(localStorage.getItem('S')||'null')||{updated:1,manual:[],due:{},done:[],remindTime:'17:00',tt:'',ntfy:'hw-'+Math.random().toString(36).slice(2,14),discord:''};
@@ -72,7 +79,7 @@ function save(){S.updated=Date.now();localStorage.setItem('S',JSON.stringify(S))
 function items(){
   const m=S.manual.map(h=>({id:h.id,title:h.title,subj:h.subject,due:h.due,manual:1}));
   const lim=Date.now()-30*864e5;
-  const p=(D?.tasks||[]).filter(t=>(t.description||'').trim()&&(!t.date||new Date(t.date)>lim)).map(t=>({id:t.id,title:t.title,subj:t.subject_name,due:S.due[t.id]?.d||'',desc:t.description}));
+  const p=(D?.tasks||[]).filter(t=>(t.description||'').trim()&&(!t.date||new Date(t.date)>lim)).map(t=>({id:t.id,title:t.title,subj:t.subject_name,due:S.due[t.id]?.d||nextLessonDate(t.subject_name),desc:t.description}));
   return [...m,...p].sort((a,b)=>(a.due||'9')<(b.due||'9')?-1:1);
 }
 function ttDay(k){
@@ -83,10 +90,12 @@ function ttDay(k){
   if(automatic.length)return automatic;
   return S.tt.split('\n').map(l=>l.trim().match(/^(Mo|Di|Mi|Do|Fr)\s+(\d+)\s+(.+?)(?:\s+(\S+))?$/i)).filter(m=>m&&m[1].toLowerCase()==k.toLowerCase()).map(m=>({h:+m[2],fach:m[3],raum:m[4]||'',time:''})).sort((a,b)=>Number.parseInt(a.h,10)-Number.parseInt(b.h,10));
 }
-const lessons=l=>l.length?l.map(x=>'<div class="card lesson"><span class="mark">'+esc(x.h)+'.</span><div class="lesson-main"><div class="lesson-title">'+esc(x.fach)+'</div><div class="lesson-meta">'+[x.time,x.teacher].filter(Boolean).map(esc).join(' · ')+(x.raum?' · Raum '+esc(x.raum):'')+'</div></div></div>').join(''):'<p class="sub">Kein Plan für diesen Tag hinterlegt.</p>';
+function nextLessonDate(subject){const names={Montag:0,Dienstag:1,Mittwoch:2,Donnerstag:3,Freitag:4};const wanted=subjectKey(subject);let best=null;for(const e of D?.timetable?.entries||[]){if(subjectKey(e.subject)!==wanted)continue;const wd=names[e.day];if(wd===undefined)continue;const now=new Date(),delta=(wd-(now.getDay()+6)%7+7)%7,d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()+delta);if(delta===0){const end=String(e.time||'').match(/-\s*(\d{1,2}):(\d{2})/);if(end&&now.getHours()*60+now.getMinutes()>=Number(end[1])*60+Number(end[2]))d.setDate(d.getDate()+7)}if(!best||d<best)best=d}return best?iso(best):''}
+function groupLessons(list){const sorted=[...list].sort((a,b)=>Number.parseInt(a.h,10)-Number.parseInt(b.h,10)),out=[];for(const x of sorted){const p=out[out.length-1],same=p&&p.fach===x.fach&&p.raum===x.raum&&p.teacher===x.teacher&&Number.parseInt(x.h,10)===Number.parseInt(p.lastH,10)+1;if(same){p.lastH=x.h;p.endTime=(x.time||'').split(' - ').pop()||p.endTime;p.double=true}else out.push({...x,lastH:x.h,endTime:(x.time||'').split(' - ').pop()||''})}return out}
+const lessons=l=>{const grouped=groupLessons(l);return grouped.length?grouped.map(x=>'<div class="card lesson '+(x.double?'double':'')+'"><span class="mark">'+(x.double?esc(x.h)+'.–'+esc(x.lastH)+'. Stunde':esc(x.h)+'. Stunde')+'</span><div class="lesson-main"><div class="lesson-title">'+esc(subjectName(x.fach))+'</div><div class="lesson-meta">'+(x.time?esc(x.time.split(' - ')[0]+' - '+(x.double?x.endTime:x.time.split(' - ').pop())):'')+[x.teacher].filter(Boolean).map(esc).join(' · ')+(x.raum?' · Raum '+esc(x.raum):'')+'</div></div></div>').join(''):'<p class="sub">Kein Plan für diesen Tag hinterlegt.</p>'};
 const hw=h=>`<div class="card"><div class="row"><label class="${S.done.includes(h.id)?'done':''}"><input type="checkbox" style="width:auto" ${S.done.includes(h.id)?'checked':''} data-done="${h.id}"> <b>${esc(h.title)}</b></label>
 ${h.manual?`<button class="ghost" data-del="${h.id}" aria-label="Löschen">✕</button>`:''}</div>
-<div class="tag">${esc(h.subj)||'–'} · ${rel(h.due)}</div>
+<div class="tag">${esc(subjectName(h.subj))||'–'} · ${rel(h.due)}</div>
 ${!h.manual?`<div class="row" style="margin-top:6px"><span class="tag">Fällig am</span><input type="date" style="width:auto" value="${h.due}" data-due="${h.id}"></div>`:''}
 ${h.desc?`<div class="homework-text">${esc(h.desc)}</div>`:''}</div>`;
 
@@ -103,11 +112,11 @@ heute(){
 plan(){const automatic=(D?.timetable?.entries||[]).length>0;return '<h1>Stundenplan</h1><p class="sub">'+(automatic?'Automatisch aus dem Schulportal übernommen.':'Noch kein Portalplan gefunden; eigener Plan bleibt als Ersatz verfügbar.')+'</p>'+DAYS.map(k=>'<h2>'+k+'</h2>'+lessons(ttDay(k))).join('')}, 
 ha(){
   return `<h1>Aufgaben</h1><p class="sub">Nur Portal-Einträge mit echtem Hausaufgabentext plus eigene Aufgaben. Fälligkeit kannst du ergänzen.</p>
-  <form id="add" class="card"><input class="full" name="title" placeholder="Neue Aufgabe" required><input name="subject" placeholder="Fach"><input name="due" type="date" required><button class="full">Aufgabe speichern</button></form>
+  <form id="add" class="card"><input class="full" name="title" placeholder="Neue Aufgabe" required><input name="subject" id="new-subject" placeholder="Fach"><input name="due" id="new-due" type="date" required value="${today()}"><button class="full">Aufgabe speichern</button></form>
   ${items().map(hw).join('')||'<p class="sub">Noch nichts da.</p>'}`;
 },
 vertretung(){
-  const s=D?.sub;if(!s)return'<h1>Vertretung</h1><p class="sub">'+(D?'Nicht verfügbar.':'Lade…')+'</p>';
+  const s=D?.sub;if(!s)return'<h1>Vertretung</h1><p class="sub">'+(D?'Deine Schule stellt aktuell keine Vertretungsdaten im Schulportal bereit.':'Lade…')+'</p>';
   return `<h1>Vertretung</h1><p class="sub">${s.date?fmt(s.date):''}</p>${s.info?`<div class="card">${esc(s.info)}</div>`:''}
   <div class="scroll"><table><tr><th>Std</th><th>Klasse</th><th>Fach</th><th>Lehrer</th><th>Vertr.</th><th>Raum</th><th>Info</th></tr>
   ${s.items.map(i=>`<tr>${['hours','class_name','subject','teacher','substitute','room','notice'].map(f=>`<td>${esc(i[f])}</td>`).join('')}</tr>`).join('')}</table></div>`;
@@ -128,8 +137,8 @@ set(){return `<h1>Mehr</h1>
 
 function render(){
   $('#nav').innerHTML=TABS.map(([k,i,l])=>`<button class="${k==tab?'on':''}" data-tab="${k}"><span>${i}</span>${l}</button>`).join('');
-  const ER=Object.entries(D?.errors||{}).map(([k,v])=>`${k}: ${v}`).join(' · ');
-  $('#app').innerHTML=(err?`<p class="err">⚠️ ${esc(err)}</p>`:'')+(ER?`<p class="err">⚠️ Nicht geladen – ${esc(ER)}</p>`:'')+views[tab]();
+  const errors=Object.entries(D?.errors||{});const noSub=errors.some(([k,v])=>k==='Vertretung'&&String(v).includes('response: -1'));const ER=errors.filter(([k])=>!(noSub&&k==='Vertretung')).map(([k,v])=>`${k}: ${v}`).join(' · ');
+  $('#app').innerHTML=brand+(err?`<p class="err">⚠️ ${esc(err)}</p>`:'')+(noSub?'<div class="notice"><span class="notice-icon">ℹ️</span><div><b>Kein Vertretungsplan verfügbar</b><br>Deine Schule stellt über das Schulportal aktuell keine Vertretungsdaten bereit.</div></div>':'')+(ER?`<p class="err">⚠️ Nicht geladen – ${esc(ER)}</p>`:'')+views[tab]();
 }
 document.addEventListener('click',e=>{
   const sc=e.target.closest('[data-sid]');if(sc){$('#sid').value=sc.dataset.sid;$('#sq').value=sc.dataset.sname;$('#sres').innerHTML='';return}
@@ -141,6 +150,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('change',e=>{
   const c=e.target.dataset;
+  if(e.target.id==='new-due')e.target.dataset.edited='1';
   if(c.done){S.done=e.target.checked?[...S.done,c.done]:S.done.filter(x=>x!=c.done);save()}
   if(c.due){const t=(D?.tasks||[]).find(x=>x.id==c.due);S.due[c.due]={d:e.target.value,t:t?.title||'',s:t?.subject_name||''};save()}
 });
@@ -161,6 +171,7 @@ document.addEventListener('submit',async e=>{
 });
 let st;
 document.addEventListener('input',e=>{
+  if(e.target.id==='new-subject'){const due=$('#new-due');if(due&&!due.dataset.edited)due.value=nextLessonDate(e.target.value)||today();return}
   if(e.target.id!='sq')return;
   const q=e.target.value.trim();$('#sid').value=/^\d+$/.test(q)?q:'';
   clearTimeout(st);
@@ -172,7 +183,7 @@ document.addEventListener('input',e=>{
 });
 function loginView(){
   $('#nav').innerHTML='';
-  $('#app').innerHTML=`<h1>Schulportal</h1><p class="sub">Melde dich mit deinem Schulportal-Zugang an. Jeder sieht nur seine eigenen Daten.</p>${err?`<p class="err">⚠️ ${esc(err)}</p>`:''}
+  $('#app').innerHTML=brand+`<h1>Willkommen</h1><p class="sub">Melde dich mit deinem Schulportal-Zugang an. Jeder sieht nur seine eigenen Daten.</p>${err?`<p class="err">⚠️ ${esc(err)}</p>`:''}
   <form id="login" class="card"><input class="full" name="sq" id="sq" placeholder="Schule suchen (Name, Ort oder Nummer)" autocomplete="off" required><input type="hidden" name="school" id="sid"><div id="sres" class="full"></div>
   <input class="full" name="username" placeholder="vorname.nachname" autocomplete="username" required>
   <input class="full" type="password" name="password" placeholder="Passwort" autocomplete="current-password" required>
@@ -182,7 +193,7 @@ function loginView(){
 
 async function load(refresh){
   err='';
-  try{D=await api('data'+(refresh?'?refresh=true':''))}catch(x){err=x.message}
+  try{D=await api('data'+(refresh?'?refresh=true':''));let changed=false;for(const t of D?.tasks||[]){if(!(t.description||'').trim()||S.due[t.id]?.d)continue;const due=nextLessonDate(t.subject_name);if(due){S.due[t.id]={d:due,t:t.title,s:t.subject_name};changed=true}}if(changed)save()}catch(x){err=x.message}
   render();
 }
 async function init(){
@@ -195,3 +206,4 @@ init();
 </script>
 </body>
 </html>
+
