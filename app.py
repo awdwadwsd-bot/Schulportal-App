@@ -208,6 +208,24 @@ def index():
     return FileResponse(Path(__file__).resolve().parent / "index.html", headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/manifest.webmanifest")
+def pwa_manifest():
+    from pathlib import Path
+    return FileResponse(Path(__file__).resolve().parent / "manifest.webmanifest", media_type="application/manifest+json", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/sw.js")
+def pwa_service_worker():
+    from pathlib import Path
+    return FileResponse(Path(__file__).resolve().parent / "sw.js", media_type="application/javascript", headers={"Cache-Control": "no-cache", "Service-Worker-Allowed": "/"})
+
+
+@app.get("/icon.svg")
+def pwa_icon():
+    from pathlib import Path
+    return FileResponse(Path(__file__).resolve().parent / "icon.svg", media_type="image/svg+xml", headers={"Cache-Control": "public, max-age=86400"})
+
+
 @app.get("/ping")
 def ping():
     return "ok"
