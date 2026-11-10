@@ -1,4 +1,4 @@
-import os, re, json, time, asyncio, hashlib, threading, traceback, datetime as dt
+import os, re, json, time, asyncio, hashlib, threading, traceback, datetime as dt, uuid, hmac
 from contextlib import asynccontextmanager
 from zoneinfo import ZoneInfo
 
@@ -17,17 +17,52 @@ F = Fernet(E["SECRET_KEY"].encode())  # nur der Server kennt den Schlüssel
 cache = {}  # uid -> (zeit, daten)
 HOOK = re.compile(r"^https://(discord|discordapp)\.com/api/webhooks/\d+/[\w-]+$")
 TOPIC = re.compile(r"^[A-Za-z0-9_-]{6,64}$")
+BLOG_KEY = "__blog_posts__"
+STATE_LOCK = threading.RLock()
 
 
 def db():
-    try:
-        return json.load(open(STATE))
-    except Exception:
-        return {}
+    with STATE_LOCK:
+        try:
+            with open(STATE, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
 
 
 def save_db(d):
-    json.dump(d, open(STATE, "w"), ensure_ascii=False)
+    with STATE_LOCK:
+        with open(STATE, "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False)
+
+
+def is_admin(p):
+    configured = E.get("ADMIN_USERNAME", "").strip().casefold()
+    supplied = str(p.get("n", "")).strip().casefold()
+    return bool(configured and supplied and hmac.compare_digest(configured, supplied))
+
+
+def require_admin(p):
+    if not is_admin(p):
+        raise HTTPException(403, "Kein Admin-Zugang für dieses Konto")
+
+
+def save_posts(posts):
+    with STATE_LOCK:
+        d = db()
+        d[BLOG_KEY] = posts
+        save_db(d)
+
+
+def post_input(b):
+    title = str(b.get("title", "")).strip()
+    summary = str(b.get("summary", "")).strip()
+    body = str(b.get("body", "")).strip()
+    if not title or not body:
+        raise HTTPException(400, "Titel und Text sind erforderlich")
+    if len(title) > 160 or len(summary) > 400 or len(body) > 30000:
+        raise HTTPException(413, "Der Beitrag ist zu lang")
+    return {"title": title, "summary": summary, "body": body, "published": bool(b.get("published", False))}
 
 
 def auth(x_token: str = Header("")):
@@ -96,7 +131,7 @@ def fetch(c):
         }
 
     def cal():
-        events = c.get_calendar(now - dt.timedelta(days=7), now + dt.timedelta(days=90))
+        events = c.get_calendar(now - dt.timedelta(days=30), now + dt.timedelta(days=365))
         return [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in events]
 
     def timetable():
@@ -176,6 +211,58 @@ def index():
 @app.get("/ping")
 def ping():
     return "ok"
+
+
+@app.get("/api/blog")
+def public_blog():
+    return sorted([post for post in db().get(BLOG_KEY, []) if post.get("published")], key=lambda post: post.get("created", ""), reverse=True)
+
+
+@app.get("/api/admin/status")
+def admin_status(p: dict = Depends(auth)):
+    return {"admin": is_admin(p)}
+
+
+@app.get("/api/admin/blog")
+def admin_blog(p: dict = Depends(auth)):
+    require_admin(p)
+    return sorted(db().get(BLOG_KEY, []), key=lambda post: post.get("created", ""), reverse=True)
+
+
+@app.post("/api/admin/blog")
+def create_blog_post(b: dict = Body(...), p: dict = Depends(auth)):
+    require_admin(p)
+    post = post_input(b)
+    now = dt.datetime.now(TZ).isoformat()
+    post.update({"id": uuid.uuid4().hex, "created": now, "updated": now, "author": "Lukas"})
+    posts = db().get(BLOG_KEY, [])
+    posts.append(post)
+    save_posts(posts)
+    return post
+
+
+@app.put("/api/admin/blog/{post_id}")
+def update_blog_post(post_id: str, b: dict = Body(...), p: dict = Depends(auth)):
+    require_admin(p)
+    posts = db().get(BLOG_KEY, [])
+    post = next((item for item in posts if item.get("id") == post_id), None)
+    if post is None:
+        raise HTTPException(404, "Beitrag nicht gefunden")
+    post.update(post_input(b))
+    post["updated"] = dt.datetime.now(TZ).isoformat()
+    save_posts(posts)
+    return post
+
+
+@app.delete("/api/admin/blog/{post_id}")
+def delete_blog_post(post_id: str, p: dict = Depends(auth)):
+    require_admin(p)
+    posts = db().get(BLOG_KEY, [])
+    remaining = [item for item in posts if item.get("id") != post_id]
+    if len(remaining) == len(posts):
+        raise HTTPException(404, "Beitrag nicht gefunden")
+    save_posts(remaining)
+    return {"ok": True}
 
 
 _schools = []
