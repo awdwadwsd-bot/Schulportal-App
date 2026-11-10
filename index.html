@@ -179,7 +179,7 @@ document.addEventListener('click',async e=>{
   if(e.target.closest('[data-cal-today]')){const n=new Date();calendarMonth=new Date(n.getFullYear(),n.getMonth(),1);calendarSelected=today();return render()}
   const calDate=e.target.closest('[data-cal-date]');if(calDate){calendarSelected=calDate.dataset.calDate;return render()}
   const calFilter=e.target.closest('[data-cal-filter]');if(calFilter){calendarFilter=calFilter.dataset.calFilter;return render()}
-  const download=e.target.closest('[data-download]');if(download){if(download.dataset.download==='all-ics')exportCalendarIcs(D?.cal||[],'schulportal-termine.ics');if(download.dataset.download==='all-csv')exportCalendarCsv(D?.cal||[],'schulportal-termine.csv');if(download.dataset.download==='work-ics')exportCalendarIcs((D?.cal||[]).filter(relevantWork),'meine-arbeiten.ics');return}
+  const download=e.target.closest('[data-download]');if(download){if(download.dataset.download==='all-ics')exportCalendarIcs(D?.cal||[],'schulportal-termine.ics');if(download.dataset.download==='all-csv')downloadText('schulportal-termine.csv',exportCalendarCsv(D?.cal||[]),'text/csv;charset=utf-8');if(download.dataset.download==='work-ics')exportCalendarIcs((D?.cal||[]).filter(relevantWork),'meine-arbeiten.ics');return}
   if(e.target.id==='blog-cancel'){blogEditId=null;return render()}
   const blogEdit=e.target.closest('[data-blog-edit]');if(blogEdit){blogEditId=blogEdit.dataset.blogEdit;return render()}
   const blogDelete=e.target.closest('[data-blog-delete]');if(blogDelete){if(!confirm('Diesen Beitrag wirklich löschen?'))return;try{await api('admin/blog/'+encodeURIComponent(blogDelete.dataset.blogDelete),{method:'DELETE'});blogPosts=await api('admin/blog');render()}catch(x){err=x.message;render()}return}
