@@ -1,4 +1,4 @@
-const CACHE_NAME = "schulportal-shell-v1";
+const CACHE_NAME = "schulportal-shell-v2";
 const SHELL = ["/", "/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", event => {
@@ -17,10 +17,11 @@ self.addEventListener("fetch", event => {
   if (request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
 
   if (request.mode === "navigate") {
+    const cacheKey = url.pathname;
     event.respondWith(fetch(request).then(response => {
-      if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put("/", response.clone()));
+      if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(cacheKey, response.clone()));
       return response;
-    }).catch(() => caches.match("/")));
+    }).catch(() => caches.match(cacheKey) || caches.match("/")));
     return;
   }
 
