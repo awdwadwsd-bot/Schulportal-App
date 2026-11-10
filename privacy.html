@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080b18">
+<title>Datenschutzerklärung · Schulportal Hessen Reimagined</title>
+<style>
+:root{color-scheme:dark;--bg:#080b18;--card:#141928;--ink:#f4f6ff;--text:#d8def1;--mute:#9aa5c0;--accent:#9ba2ff;--line:#303951;--warn:#392d1a}
+*{box-sizing:border-box}body{margin:0;padding:24px 16px 60px;background:radial-gradient(ellipse at 80% -10%,#181c3e 0,transparent 40%),var(--bg);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text)}
+main{max-width:850px;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:28px}a{color:var(--accent)}.brand{font-weight:800;color:var(--ink);text-decoration:none}
+h1,h2{color:var(--ink);line-height:1.2}h1{font-size:clamp(2rem,5vw,3rem);margin:12px 0}h2{font-size:1.25rem;margin:26px 0 8px}
+p,li{max-width:78ch}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 24px;margin:14px 0}
+.notice{background:var(--warn);border:1px solid #80602e;border-radius:12px;padding:14px 16px;color:#ffe4a8}
+.tag{color:var(--mute);font-size:.9rem}.list{padding-left:22px}
+@media(max-width:600px){.card{padding:16px}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<main>
+<div class="top"><a class="brand" href="/">Schulportal Hessen Reimagined · by Lukas</a><a href="/">Zur App</a></div>
+<p class="tag">Version 2026-11-10-v1 · Stand: 10. November 2026</p>
+<h1>Datenschutzerklärung</h1>
+<p>Diese Erklärung beschreibt, welche Daten die private App „Schulportal Hessen Reimagined“ verarbeitet und wofür sie genutzt werden. Sie ist eine technische Information zur aktuellen App-Version.</p>
+<div class="notice"><b>Bitte vor einer öffentlichen Weitergabe vervollständigen:</b> Betreiber-Kontakt und weitere Angaben zur rechtlichen Verantwortlichkeit sind noch nicht hinterlegt. Die Datenschutzerklärung ist deshalb ein Entwurf und keine rechtliche Prüfung.</div>
+
+<section class="card">
+<h2>1. Verantwortlicher und Kontakt</h2>
+<p>Verantwortlich für den Betrieb dieser privaten App ist Lukas, Betreiber der App „Schulportal Hessen Reimagined“.</p>
+<p><b>Kontakt:</b> Kontakt-E-Mail des Betreibers muss noch ergänzt werden.</p>
+</section>
+
+<section class="card">
+<h2>2. Welche Daten verarbeitet die App?</h2>
+<ul class="list">
+<li><b>Schulportal-Anmeldung:</b> Schul-ID, Benutzername und Passwort, damit die App Daten aus deinem Schulportal Hessen abrufen kann.</li>
+<li><b>Schulportal-Inhalte:</b> Stundenplan, „Mein Unterricht“-Hausaufgaben, Kalender- und Vertretungsplandaten.</li>
+<li><b>Deine App-Einträge:</b> manuelle Aufgaben, Noten, erledigte Aufgaben, Fälligkeiten, Lernplan-Fortschritt und Dashboard-Einstellungen.</li>
+<li><b>Optionale Benachrichtigungsangaben:</b> ntfy-Thema oder Discord-Webhook, falls du sie selbst in den Einstellungen einträgst. Die App hat derzeit keine E-Mail- oder WhatsApp-Benachrichtigungen.</li>
+<li><b>Admin-Inhalte:</b> Blogbeiträge, die im Tab „Über Lukas“ erstellt werden. Veröffentlichte Beiträge sind für Besucher der Website sichtbar.</li>
+<li><b>Bestätigung dieser Erklärung:</b> Version und Zeitpunkt der Bestätigung werden gespeichert, damit die App die Zustimmung für den jeweiligen Zugang nachvollziehen kann.</li>
+</ul>
+</section>
+
+<section class="card">
+<h2>3. Zweck und Schulportal-Zugriff</h2>
+<p>Die Daten werden verwendet, um die Funktionen der App bereitzustellen: Unterricht und Aufgaben anzeigen, Arbeiten filtern, Lernpläne erzeugen, Kalender exportieren und persönliche Noten bzw. Einstellungen speichern.</p>
+<p>Die Schulportal-Anmeldung wird ausschließlich zum Abruf der von dir angeforderten Portal-Daten verwendet. Die App liest Daten aus dem Schulportal; sie ändert keine Einträge dort.</p>
+<p><b>Rechtsgrundlage:</b> Die konkrete Rechtsgrundlage muss vom Betreiber noch festgelegt und in dieser Erklärung ergänzt werden. Diese Fassung ist in diesem Punkt nicht vollständig.</p>
+</section>
+
+<section class="card">
+<h2>4. Speicherung und Verschlüsselung</h2>
+<ul class="list">
+<li>Die Verbindung zur Website erfolgt über HTTPS.</li>
+<li>Das Anmelde-Token mit den Schulportal-Zugangsdaten ist mit einem serverseitigen Fernet-Schlüssel verschlüsselt.</li>
+<li>Die serverseitige App-Datei mit Aufgaben, Noten, Einstellungen und Zustimmungsnachweisen wird ebenfalls mit diesem Schlüssel verschlüsselt gespeichert. Der Schlüssel liegt als geheime Render-Umgebungsvariable vor.</li>
+<li>Dein Browser speichert außerdem App-Einstellungen und einen verschlüsselten Anmeldetoken in seinem lokalen Speicher. Die App-Daten im Browser-Speicher selbst sind nicht separat verschlüsselt. Schütze deshalb dein Gerät und verwende auf gemeinsam genutzten Geräten „Abmelden“.</li>
+<li>Der App-Dienst läuft bei Render in der Region Frankfurt. Im kostenlosen Render-Tarif ist lokaler Dateispeicher nicht dauerhaft; Neustarts, Deploys oder Ruhezustand können serverseitige App-Daten löschen. Exportiere wichtige Daten regelmäßig über den Backup-Button.</li>
+</ul>
+</section>
+
+<section class="card">
+<h2>5. Empfänger und externe Dienste</h2>
+<p>Die App wird von Render gehostet. Für den Portalabruf wird die Python-Bibliothek pylanis verwendet, die mit dem Schulportal Hessen kommuniziert.</p>
+<p>Wenn du ntfy oder Discord in den Einstellungen aktivierst, werden die Nachricht mit Fach und Aufgabenname sowie die von dir eingetragene ntfy-Adresse bzw. der Webhook an den jeweils ausgewählten Dienst übermittelt. Diese Angaben sind optional. Bei diesen externen Diensten muss der Betreiber noch prüfen und ergänzen, ob und welche Daten außerhalb des Europäischen Wirtschaftsraums verarbeitet werden.</p>
+<p>Google Fonts werden von der App nicht mehr geladen. Die App verkauft deine Daten nicht und verwendet sie nicht für Werbetracking.</p>
+</section>
+
+<section class="card">
+<h2>6. Aufbewahrung und Löschung</h2>
+<p>App-Daten bleiben gespeichert, solange die Render-Datei vorhanden ist. Auf dem kostenlosen Render-Dienst können sie bei Neustarts, Deploys oder Ruhezustand verloren gehen. Die App bietet einen Datenexport und -import; dadurch wird eine Kopie im Browser bzw. auf deinem Gerät angelegt.</p>
+<p>Zum Entfernen gespeicherter Daten oder für Fragen zur Verarbeitung wende dich bitte an den Betreiber über die noch zu ergänzende Kontaktadresse. „Abmelden“ löscht den lokalen Browserzustand auf diesem Gerät, nicht automatisch alle serverseitigen Daten.</p>
+</section>
+
+<section class="card">
+<h2>7. Deine Wahl</h2>
+<p>Vor der Anmeldung musst du bestätigen, dass du diese Erklärung gelesen hast. Die Bestätigung wird mit Versionsnummer und Zeitpunkt gespeichert. Du kannst die App ohne Anmeldung aufrufen, aber die persönlichen Schulportal-Funktionen sind dann nicht verfügbar.</p>
+</section>
+
+<section class="card">
+<h2>8. Änderungen</h2>
+<p>Wenn sich die Verarbeitung oder die App-Funktionen ändern, kann eine aktualisierte Version dieser Erklärung erscheinen. Bei einer neuen Version fragt die App die Bestätigung erneut ab.</p>
+</section>
+<p class="tag">Bitte gib hier keine API-Schlüssel, Passwörter oder sonstigen Geheimnisse ein.</p>
+</main>
+</body>
+</html>
