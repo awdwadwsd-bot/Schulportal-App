@@ -38,6 +38,7 @@ table{width:100%;border-collapse:collapse;min-width:680px}td,th{padding:11px 10p
 .notice{display:flex;align-items:flex-start;gap:10px;background:var(--notice);border:1px solid var(--notice-line);color:var(--notice-text);border-radius:14px;padding:13px 16px;margin:2px 0 18px;line-height:1.45}.notice-icon{font-size:1.1rem}
 .brandbar{display:flex;align-items:center;gap:13px;margin:0 0 23px;color:var(--ink);font-weight:850;letter-spacing:-.035em}.brandbar svg{width:48px;height:48px;flex:none}.brandbar small{display:block;color:var(--mute);font-size:.78rem;font-weight:650;letter-spacing:.015em;margin-top:2px}.brandbar small b{color:var(--accent)}.brandbar small i{font-style:normal;font-weight:550;margin-left:5px}
 .profile-grid{display:grid;grid-template-columns:2fr 1fr;gap:18px}.profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.profile-field{border:1px solid var(--line);border-radius:12px;padding:12px 14px}.profile-field small{display:block;color:var(--mute);margin-bottom:3px}.status-good{color:#37d892;font-weight:750}.theme-button{width:100%;text-align:left}
+.app-top{display:flex;justify-content:flex-end;margin:-4px 0 12px}.theme-toggle{display:inline-flex;align-items:center;gap:8px;background:var(--card);color:var(--ink);border-color:var(--line);border-radius:999px;padding:8px 13px}.grade-summary{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.grade-value{font-size:1.55rem;font-weight:850;color:var(--accent)}.grade-entry{display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;align-items:center}.grade-entry input{min-width:0}.grade-subject{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center}.small-button{padding:6px 10px}
 #login{max-width:500px;margin:26px auto;padding:22px}#login~.tag{max-width:500px;margin:0 auto;text-align:center}
 @media(min-width:900px){body{padding:24px 0 24px 240px}main#app{margin:0 auto;min-height:100vh}
 nav{top:0;bottom:0;right:auto;width:220px;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:7px;padding:28px 16px;border-top:0;border-right:1px solid var(--line)}
@@ -61,16 +62,16 @@ const SUBJECTS={D:'Deutsch',DE:'Deutsch',E:'Englisch',EN:'Englisch',M:'Mathemati
 const subjectName=s=>{const raw=String(s||'').trim(),whole=SUBJECTS[raw.toUpperCase()];if(whole)return whole;const m=raw.match(/^([A-Za-z0-9]+)(\s+.*)$/);return m&&SUBJECTS[m[1].toUpperCase()]?SUBJECTS[m[1].toUpperCase()]+m[2]:raw};
 const subjectKey=s=>{let v=subjectName(s).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(/^(MATHE|MATHEMATIK|MATH)\b/.test(v))return'MATHEMATIK';if(/^DEUTSCH\b/.test(v))return'DEUTSCH';if(/^ENGLISCH\b/.test(v))return'ENGLISCH';if(/^BIOLOGIE\b/.test(v))return'BIOLOGIE';if(/^CHEMIE\b/.test(v))return'CHEMIE';if(/^SPANISCH\b/.test(v))return'SPANISCH';if(/^FRANZOESISCH\b/.test(v))return'FRANZOESISCH';return v};
 const brand='<div class="brandbar"><svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="logoGradient" x1="4" y1="4" x2="44" y2="44"><stop stop-color="#6575ff"/><stop offset="1" stop-color="#3828d9"/></linearGradient></defs><rect width="48" height="48" rx="15" fill="url(#logoGradient)"/><path d="m10 19 14-8 14 8M13 21v17h22V21M19 38V27h10v11M15 23h18" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Schulportal Hessen<small><b>Reimagined</b><i>by Lukas</i></small></span></div>';
-const TABS=[['heute','🏠','Heute'],['plan','📅','Plan'],['ha','📚','Aufgaben'],['arbeiten','📝','Arbeiten'],['vertretung','🔄','Vertretung'],['kal','🗓️','Kalender'],['benutzer','👤','Benutzer']];
-let T=localStorage.getItem('t'),tab='heute',D=null,err='';
-let S=JSON.parse(localStorage.getItem('S')||'null')||{updated:1,manual:[],due:{},done:[],remindTime:'17:00',tt:'',ntfy:'hw-'+Math.random().toString(36).slice(2,14),discord:''};
+const TABS=[['heute','🏠','Heute'],['plan','📅','Plan'],['ha','📚','Aufgaben'],['arbeiten','📝','Arbeiten'],['noten','🎓','Meine Noten'],['vertretung','🔄','Vertretung'],['kal','🗓️','Kalender'],['benutzer','👤','Benutzer']];
+let T=localStorage.getItem('t'),tab='heute',D=null,err='',subDate=today(),subData=null,subLoading=false,subError='';
+let S=JSON.parse(localStorage.getItem('S')||'null')||{updated:1,manual:[],due:{},done:[],grades:{},remindTime:'17:00',tt:'',ntfy:'hw-'+Math.random().toString(36).slice(2,14),discord:''};S.grades ||= {};
 let theme=localStorage.getItem('theme')||'dark';document.documentElement.dataset.theme=theme;
 
 const iso=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')};
 const today=()=>iso(new Date());
 const days=d=>Math.round((new Date(d+'T00:00')-new Date(today()+'T00:00'))/864e5);
 const rel=d=>{if(!d)return'kein Datum';const n=days(d);return n<0?`<span class="late">überfällig (${-n} Tg)</span>`:n==0?'<b>heute</b>':n==1?'<b>morgen</b>':`in ${n} Tagen`};
-const fmt=d=>new Date(d).toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});
+const fmt=d=>new Date(typeof d==='string'&&/^\d{4}-\d\d-\d\d$/.test(d)?d+'T12:00:00':d).toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});
 
 async function api(p,o={}){
   const r=await fetch('/api/'+p,{...o,headers:{'X-Token':T,'Content-Type':'application/json'}});
@@ -79,6 +80,9 @@ async function api(p,o={}){
   return r.json();
 }
 function save(){S.updated=Date.now();localStorage.setItem('S',JSON.stringify(S));api('state',{method:'PUT',body:JSON.stringify(S)}).catch(()=>{});render()}
+function gradeAverage(g){const w=Math.max(0,Number(g.writtenWeight??2)),o=Math.max(0,Number(g.oralWeight??1)),sum=w+o;if(!sum)return null;const items=g.entries||[],weighted=items.reduce((a,e)=>a+(Number(e.grade)||0)*(e.type==='mündlich'?o:w),0),weights=items.reduce((a,e)=>a+(e.type==='mündlich'?o:w),0);return weights?weighted/weights:null}
+function gradeGerman(n){if(n==null)return'–';return(Number.isInteger(n)?String(n):n.toFixed(2).replace('.',','))}
+function addGradeSubject(name){const key=subjectKey(name);if(!key)return;S.grades[key] ||= {name:subjectName(name),writtenWeight:2,oralWeight:1,entries:[]};return key}
 
 function items(){
   const m=S.manual.map(h=>({id:h.id,title:h.title,subj:h.subject,due:h.due,manual:1}));
@@ -121,10 +125,12 @@ ha(){
   ${items().map(hw).join('')||'<p class="sub">Noch nichts da.</p>'}`;
 },
 vertretung(){
-  const s=D?.sub;if(!s)return'<h1>Vertretung</h1><p class="sub">'+(D?'Deine Schule stellt aktuell keine Vertretungsdaten im Schulportal bereit.':'Lade…')+'</p>';
-  return `<h1>Vertretung</h1><p class="sub">${s.date?fmt(s.date):''}</p>${s.info?`<div class="card">${esc(s.info)}</div>`:''}
+  const s=subData||((subDate===today())?D?.sub:null);if(subLoading)return `<h1>Vertretung</h1><div class="card"><label for="sub-date">Tag auswählen</label><input id="sub-date" type="date" value="${esc(subDate)}"></div><p class="sub">Vertretungsplan wird geladen…</p>`;
+  if(subError)return `<h1>Vertretung</h1><div class="card"><label for="sub-date">Tag auswählen</label><input id="sub-date" type="date" value="${esc(subDate)}"></div><p class="err">${esc(subError)}</p>`;
+  if(!s)return'<h1>Vertretung</h1><p class="sub">Vertretungsplan wird geladen…</p>';
+  return `<h1>Vertretung</h1><div class="card row"><label for="sub-date">Tag auswählen</label><input id="sub-date" type="date" value="${esc(subDate)}" style="width:auto"></div><p class="sub">${s.date?fmt(s.date):fmt(subDate)}</p>${s.info?`<div class="card">${esc(s.info)}</div>`:''}
   <div class="scroll"><table><tr><th>Std</th><th>Klasse</th><th>Fach</th><th>Lehrer</th><th>Vertr.</th><th>Raum</th><th>Info</th></tr>
-  ${s.items.length?s.items.map(i=>`<tr>${['hours','class_name','subject','teacher','substitute','room','notice'].map(f=>`<td>${esc(i[f])}</td>`).join('')}</tr>`).join(''):'<tr><td colspan="7">Heute liegen keine Vertretungen für deinen Stundenplan vor.</td></tr>'}</table></div>`;
+  ${s.items.length?s.items.map(i=>`<tr>${['hours','class_name','subject','teacher','substitute','room','notice'].map(f=>`<td>${esc(i[f])}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="7">Für ${esc(fmt(subDate))} wurden keine Vertretungseinträge gefunden.</td></tr>`}</table></div>`;
 },
 kal(){
   const ev=(D?.cal||[]).filter(e=>days(iso(e.start))>=0).sort((a,b)=>a.start<b.start?-1:1);
@@ -133,8 +139,8 @@ kal(){
     return `<div class="card ${x?'exam':''}"><div class="row"><b>${x?'🚨 ':''}${esc(e.title)}</b><span class="tag">${rel(iso(e.start))}</span></div><div class="tag">${fmt(e.start)}${e.place?' · '+esc(e.place):''}</div></div>`}).join('')||'<p class="sub">Keine Termine.</p>');
 },
 arbeiten(){const exams=(D?.cal||[]).filter(e=>days(iso(e.start))>=0&&/arbeit|klassenarbeit|klausur|test|lernkontrolle|prüfung|pruefung/i.test(e.title||'')).sort((a,b)=>String(a.start).localeCompare(String(b.start)));return `<h1>Arbeiten</h1><p class="sub">Deine nächsten Klassenarbeiten, Tests und Lernkontrollen.</p>`+(exams.map(e=>`<div class="card exam"><div class="row"><b>📝 ${esc(e.title)}</b><span class="tag">${rel(iso(e.start))}</span></div><div class="tag">${fmt(e.start)}${e.place?' · '+esc(e.place):''}</div></div>`).join('')||'<p class="sub">Im Kalender stehen noch keine kommenden Arbeiten.</p>')},
+noten(){const entries=Object.entries(S.grades||{});return `<h1>Meine Noten</h1><p class="sub">Noten und Gewichtung bleiben in deinem App-Konto gespeichert. Die Standardgewichtung ist schriftlich 2 : mündlich 1 und pro Fach änderbar – verbindliche Regeln können je nach Fach und Schule abweichen.</p><form id="grade-add" class="card"><input class="full" name="subject" placeholder="Fach, z. B. Deutsch" required><button class="full">Fach hinzufügen</button></form>`+(entries.map(([key,g])=>{const avg=gradeAverage(g);return `<section class="card"><div class="grade-summary"><b style="font-size:1.1rem">${esc(g.name)}</b><span class="grade-value">${gradeGerman(avg)}</span><span class="tag">${avg===null?'Noch keine Noten':'Durchschnitt · Zeugnisprognose'}</span><button class="ghost small-button" data-grade-del="${esc(key)}" aria-label="Fach löschen">✕</button></div><div class="row" style="margin-top:12px;justify-content:flex-start;flex-wrap:wrap"><label class="tag">Gewichtung schriftlich</label><input type="number" min="0" step="0.5" value="${esc(g.writtenWeight??2)}" data-weight="${esc(key)}" data-type="written" style="width:90px"><label class="tag">mündlich</label><input type="number" min="0" step="0.5" value="${esc(g.oralWeight??1)}" data-weight="${esc(key)}" data-type="oral" style="width:90px"></div><form class="grade-entry" data-grade-form="${esc(key)}" style="margin-top:12px"><select name="type"><option value="schriftlich">Schriftlich</option><option value="mündlich">Mündlich</option></select><input name="grade" type="number" min="1" max="6" step="0.1" placeholder="Note (1–6)" required><input name="label" placeholder="z. B. Vokabeltest (optional)"><button class="small-button">Eintragen</button></form>${(g.entries||[]).map((e,n)=>`<div class="row tag" style="margin-top:8px"><span>${esc(e.type)} · ${gradeGerman(Number(e.grade))}${e.label?' · '+esc(e.label):''}</span><button class="ghost small-button" data-grade-entry-del="${esc(key)}" data-grade-index="${n}" aria-label="Note löschen">✕</button></div>`).join('')}</section>`}).join('')||'<p class="sub">Füge dein erstes Fach hinzu.</p>')},
 benutzer(){const p=D?.profile||{},field=(label,value)=>`<div class="profile-field"><small>${label}</small><b>${esc(value||'Nicht verfügbar')}</b></div>`;return `<h1>Benutzer</h1><p class="sub">Dein Schulportal-Konto und deine App-Einstellungen.</p><div class="profile-grid"><section class="card"><div class="row" style="justify-content:flex-start;margin-bottom:16px"><span class="mark" style="font-size:1.5rem;padding:12px">👤</span><div><b>Schüler / Student</b><div class="tag">Schulportal-Konto</div></div></div><div class="profile-fields">${field('Login',p.username)}${field('Schulnummer',p.school_id)}${field('Klasse',p.class_name)}${field('Angemeldet',D?'Ja':'Nein')}</div></section><aside><div class="card"><b>🛡️ Sicherheit</b><p class="row"><span class="tag">Token-Verschlüsselung</span><span class="status-good">Aktiv</span></p><p class="row"><span class="tag">Portal-Sitzung</span><span class="status-good">${D?'Aktiv':'Nicht verbunden'}</span></p></div><div class="card"><b>API-Status</b><p class="row"><span class="tag">Verbindung</span><span class="status-good">${D?'Verbunden':'Getrennt'}</span></p><p class="row"><span class="tag">Letzter Abruf</span><span class="tag">${D?.fetched?new Date(D.fetched).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'–'}</span></p></div></aside></div>
-  <h2>Darstellung</h2><div class="card"><button id="themeToggle" class="ghost theme-button">${theme==='dark'?'☀️ Helles Design einschalten':'🌙 Dunkles Design einschalten'}</button></div>
   <h2>Erinnerung</h2><div class="card row"><span>Am Vortag um</span><input type="time" style="width:auto" id="rt" value="${S.remindTime}"></div>
   <p class="tag">Push aufs Handy: App „ntfy“ installieren und dieses Thema abonnieren (nicht weitergeben).</p><input id="nt" value="${esc(S.ntfy)}" placeholder="ntfy-Thema"><input id="dc" style="margin-top:8px" value="${esc(S.discord)}" placeholder="Discord-Webhook (optional)">
   <h2>Stundenplan</h2><p class="tag">${(D?.timetable?.entries||[]).length?'Der Plan wird automatisch aus dem Schulportal geladen. Der eigene Text dient nur als Ersatz.':'Noch kein automatischer Portalplan verfügbar. Hier kannst du einen Ersatzplan eintragen.'} Format: <code>Mo 1 Mathe A12</code></p>
@@ -145,7 +151,7 @@ benutzer(){const p=D?.profile||{},field=(label,value)=>`<div class="profile-fiel
 function render(){
   $('#nav').innerHTML=TABS.map(([k,i,l])=>`<button class="${k==tab?'on':''}" data-tab="${k}"><span>${i}</span>${l}</button>`).join('');
   const errors=Object.entries(D?.errors||{});const noSub=errors.some(([k,v])=>k==='Vertretung'&&String(v).includes('response: -1'));const ER=errors.filter(([k])=>!(noSub&&k==='Vertretung')).map(([k,v])=>`${k}: ${v}`).join(' · ');
-  $('#app').innerHTML=brand+(err?`<p class="err">⚠️ ${esc(err)}</p>`:'')+(noSub?'<div class="notice"><span class="notice-icon">ℹ️</span><div><b>Kein Vertretungsplan verfügbar</b><br>Deine Schule stellt über das Schulportal aktuell keine Vertretungsdaten bereit.</div></div>':'')+(ER?`<p class="err">⚠️ Nicht geladen – ${esc(ER)}</p>`:'')+views[tab]();
+  $('#app').innerHTML=brand+`<div class="app-top"><button id="themeToggle" class="theme-toggle" aria-label="Darstellung wechseln">${theme==='dark'?'☀️ Hell':'🌙 Dunkel'}</button></div>`+(err?`<p class="err">⚠️ ${esc(err)}</p>`:'')+(noSub?'<div class="notice"><span class="notice-icon">ℹ️</span><div><b>Kein Vertretungsplan verfügbar</b><br>Deine Schule stellt über das Schulportal aktuell keine Vertretungsdaten bereit.</div></div>':'')+(ER?`<p class="err">⚠️ Nicht geladen – ${esc(ER)}</p>`:'')+views[tab]();
 }
 document.addEventListener('click',e=>{
   const sc=e.target.closest('[data-sid]');if(sc){$('#sid').value=sc.dataset.sid;$('#sq').value=sc.dataset.sname;$('#sres').innerHTML='';return}
@@ -153,11 +159,15 @@ document.addEventListener('click',e=>{
   const d=e.target.closest('[data-del]');if(d){S.manual=S.manual.filter(h=>h.id!=d.dataset.del);return save()}
   if(e.target.id=='sv'){S.remindTime=$('#rt').value||'17:00';S.tt=$('#tt').value;S.ntfy=$('#nt').value.trim();S.discord=$('#dc').value.trim();return save()}
   if(e.target.id==='themeToggle'){theme=theme==='dark'?'light':'dark';localStorage.setItem('theme',theme);document.documentElement.dataset.theme=theme;return render()}
+  const gd=e.target.closest('[data-grade-del]');if(gd){delete S.grades[gd.dataset.gradeDel];return save()}
+  const ge=e.target.closest('[data-grade-entry-del]');if(ge){S.grades[ge.dataset.gradeEntryDel].entries.splice(Number(ge.dataset.gradeIndex),1);return save()}
   if(e.target.id=='rf')return load(true);
   if(e.target.id=='lo'){localStorage.clear();location.reload()}
 });
 document.addEventListener('change',e=>{
   const c=e.target.dataset;
+  if(e.target.id==='sub-date'&&e.target.value){subDate=e.target.value;subData=null;subLoading=true;subError='';render();api('substitution?date='+encodeURIComponent(subDate)).then(x=>{subData=x;subLoading=false;render()}).catch(x=>{subError=x.message;subLoading=false;render()});return}
+  if(c.weight){const g=S.grades[c.weight];g[c.type==='written'?'writtenWeight':'oralWeight']=Number(e.target.value)||0;save();return}
   if(e.target.id==='new-due')e.target.dataset.edited='1';
   if(c.done){S.done=e.target.checked?[...S.done,c.done]:S.done.filter(x=>x!=c.done);save()}
   if(c.due){const t=(D?.tasks||[]).find(x=>x.id==c.due);S.due[c.due]={d:e.target.value,t:t?.title||'',s:t?.subject_name||''};save()}
@@ -165,6 +175,8 @@ document.addEventListener('change',e=>{
 document.addEventListener('submit',async e=>{
   e.preventDefault();
   const f=Object.fromEntries(new FormData(e.target));
+  if(e.target.id==='grade-add'){const key=addGradeSubject(f.subject);return key?save():undefined}
+  if(e.target.matches('[data-grade-form]')){const g=S.grades[e.target.dataset.gradeForm];g.entries.push({type:f.type,grade:Number(f.grade),label:f.label.trim()});return save()}
   if(e.target.id=='login'){
     err='';
     if(!f.school&&/^\d+$/.test(f.sq))f.school=f.sq;
