@@ -222,7 +222,13 @@ async def data(refresh: bool = False, p: dict = Depends(auth)):
         except Exception as ex:
             raise HTTPException(502, f"Schulportal: {ex}")
         cache[p["u"]] = (time.time(), d)
-    return d
+    out = dict(d)
+    out["profile"] = {
+        "username": p["n"],
+        "school_id": p["s"],
+        "class_name": (d.get("timetable") or {}).get("class_name", ""),
+    }
+    return out
 
 
 @app.get("/api/state")
@@ -239,3 +245,4 @@ def put_state(s: dict = Body(...), p: dict = Depends(auth)):
     d[p["u"]] = s
     save_db(d)
     return {"ok": True}
+
