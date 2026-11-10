@@ -63,12 +63,13 @@ const subjectName=s=>{const raw=String(s||'').trim(),whole=SUBJECTS[raw.toUpperC
 const subjectKey=s=>{let v=subjectName(s).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(/^(MATHE|MATHEMATIK|MATH)\b/.test(v))return'MATHEMATIK';if(/^DEUTSCH\b/.test(v))return'DEUTSCH';if(/^ENGLISCH\b/.test(v))return'ENGLISCH';if(/^BIOLOGIE\b/.test(v))return'BIOLOGIE';if(/^CHEMIE\b/.test(v))return'CHEMIE';if(/^SPANISCH\b/.test(v))return'SPANISCH';if(/^FRANZOESISCH\b/.test(v))return'FRANZOESISCH';return v};
 const brand='<div class="brandbar"><svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="logoGradient" x1="4" y1="4" x2="44" y2="44"><stop stop-color="#6575ff"/><stop offset="1" stop-color="#3828d9"/></linearGradient></defs><rect width="48" height="48" rx="15" fill="url(#logoGradient)"/><path d="m10 19 14-8 14 8M13 21v17h22V21M19 38V27h10v11M15 23h18" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Schulportal Hessen<small><b>Reimagined</b><i>by Lukas</i></small></span></div>';
 const TABS=[['heute','🏠','Heute'],['plan','📅','Plan'],['ha','📚','Aufgaben'],['arbeiten','📝','Arbeiten'],['noten','🎓','Meine Noten'],['vertretung','🔄','Vertretung'],['kal','🗓️','Kalender'],['benutzer','👤','Benutzer']];
-let T=localStorage.getItem('t'),tab='heute',D=null,err='',subDate=today(),subData=null,subLoading=false,subError='';
+let T=localStorage.getItem('t'),tab='heute',D=null,err='',subDate='',subData=null,subLoading=false,subError='';
 let S=JSON.parse(localStorage.getItem('S')||'null')||{updated:1,manual:[],due:{},done:[],grades:{},remindTime:'17:00',tt:'',ntfy:'hw-'+Math.random().toString(36).slice(2,14),discord:''};S.grades ||= {};
 let theme=localStorage.getItem('theme')||'dark';document.documentElement.dataset.theme=theme;
 
 const iso=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')};
 const today=()=>iso(new Date());
+subDate ||= today();
 const days=d=>Math.round((new Date(d+'T00:00')-new Date(today()+'T00:00'))/864e5);
 const rel=d=>{if(!d)return'kein Datum';const n=days(d);return n<0?`<span class="late">überfällig (${-n} Tg)</span>`:n==0?'<b>heute</b>':n==1?'<b>morgen</b>':`in ${n} Tagen`};
 const fmt=d=>new Date(typeof d==='string'&&/^\d{4}-\d\d-\d\d$/.test(d)?d+'T12:00:00':d).toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'short'});
