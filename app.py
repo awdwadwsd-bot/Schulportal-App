@@ -111,7 +111,18 @@ def fetch(c):
         return out
 
     def sub():
-        plan = c.get_substitution_plan()
+        try:
+            plan = c.get_substitution_plan()
+        except TypeError as ex:
+            # LanisAPI assumes the portal always returns a JSON list. Some schools/days
+            # return a scalar (for example 0) when there are no substitution rows.
+            if "'int' object is not iterable" not in str(ex):
+                raise
+            return {
+                "date": now.date().isoformat(),
+                "info": "Heute hat das Schulportal keine auswertbaren Vertretungseinträge geliefert.",
+                "items": [],
+            }
         return {
             "date": plan.date.isoformat() if plan.date else None,
             "info": plan.info,
@@ -182,7 +193,9 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 def index():
-    return FileResponse("index.html", headers={"Cache-Control": "no-cache"})
+    # Resolve relative to this file so the page works regardless of Render's cwd.
+    from pathlib import Path
+    return FileResponse(Path(__file__).resolve().parent / "index.html", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/ping")
