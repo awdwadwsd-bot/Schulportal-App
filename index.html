@@ -124,7 +124,7 @@ vertretung(){
   const s=D?.sub;if(!s)return'<h1>Vertretung</h1><p class="sub">'+(D?'Deine Schule stellt aktuell keine Vertretungsdaten im Schulportal bereit.':'Lade…')+'</p>';
   return `<h1>Vertretung</h1><p class="sub">${s.date?fmt(s.date):''}</p>${s.info?`<div class="card">${esc(s.info)}</div>`:''}
   <div class="scroll"><table><tr><th>Std</th><th>Klasse</th><th>Fach</th><th>Lehrer</th><th>Vertr.</th><th>Raum</th><th>Info</th></tr>
-  ${s.items.map(i=>`<tr>${['hours','class_name','subject','teacher','substitute','room','notice'].map(f=>`<td>${esc(i[f])}</td>`).join('')}</tr>`).join('')}</table></div>`;
+  ${s.items.length?s.items.map(i=>`<tr>${['hours','class_name','subject','teacher','substitute','room','notice'].map(f=>`<td>${esc(i[f])}</td>`).join('')}</tr>`).join(''):'<tr><td colspan="7">Heute liegen keine Vertretungen für deinen Stundenplan vor.</td></tr>'}</table></div>`;
 },
 kal(){
   const ev=(D?.cal||[]).filter(e=>days(iso(e.start))>=0).sort((a,b)=>a.start<b.start?-1:1);
