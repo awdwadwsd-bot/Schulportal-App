@@ -86,7 +86,7 @@ const hw=h=>`<div class="card"><div class="row"><label class="${S.done.includes(
 ${h.manual?`<button class="ghost" data-del="${h.id}" aria-label="Löschen">✕</button>`:''}</div>
 <div class="tag">${esc(h.subj)||'–'} · ${rel(h.due)}</div>
 ${!h.manual?`<div class="row" style="margin-top:6px"><span class="tag">Fällig am</span><input type="date" style="width:auto" value="${h.due}" data-due="${h.id}"></div>`:''}
-${h.desc?`<div class="tag" style="margin-top:4px">${esc(h.desc).slice(0,200)}</div>`:''}</div>`;
+${h.desc?`<div class="homework-text">${esc(h.desc)}</div>`:''}</div>`;
 
 const views={
 heute(){
@@ -98,9 +98,9 @@ heute(){
   <h2>Als Nächstes fällig</h2>${open.map(hw).join('')||'<p class="sub">Nichts mit Datum offen ✨</p>'}
   <h2>Vertretung</h2>${sub.length?`<p class="sub">${sub.length} Einträge im Plan – Details im Tab Vertretung.</p>`:'<p class="sub">Keine Einträge.</p>'}`;
 },
-plan(){return `<h1>Stundenplan</h1>`+DAYS.map(k=>`<h2>${k}</h2>${lessons(ttDay(k))}`).join('')},
+plan(){const automatic=(D?.timetable?.entries||[]).length>0;return '<h1>Stundenplan</h1><p class="sub">'+(automatic?'Automatisch aus dem Schulportal übernommen.':'Noch kein Portalplan gefunden; eigener Plan bleibt als Ersatz verfügbar.')+'</p>'+DAYS.map(k=>'<h2>'+k+'</h2>'+lessons(ttDay(k))).join('')}, 
 ha(){
-  return `<h1>Aufgaben</h1><p class="sub">Aus „Mein Unterricht“ plus eigene. Das Portal liefert kein Fälligkeitsdatum – trag es selbst ein, dann gibt's die Erinnerung.</p>
+  return `<h1>Aufgaben</h1><p class="sub">Nur Portal-Einträge mit echtem Hausaufgabentext plus eigene Aufgaben. Fälligkeit kannst du ergänzen.</p>
   <form id="add" class="card"><input class="full" name="title" placeholder="Neue Aufgabe" required><input name="subject" placeholder="Fach"><input name="due" type="date" required><button class="full">Aufgabe speichern</button></form>
   ${items().map(hw).join('')||'<p class="sub">Noch nichts da.</p>'}`;
 },
@@ -119,7 +119,7 @@ kal(){
 set(){return `<h1>Mehr</h1>
   <h2>Erinnerung</h2><div class="card row"><span>Am Vortag um</span><input type="time" style="width:auto" id="rt" value="${S.remindTime}"></div>
   <p class="tag">Push aufs Handy: App „ntfy“ installieren und dieses Thema abonnieren (nicht weitergeben).</p><input id="nt" value="${esc(S.ntfy)}" placeholder="ntfy-Thema"><input id="dc" style="margin-top:8px" value="${esc(S.discord)}" placeholder="Discord-Webhook (optional)">
-  <h2>Stundenplan</h2><p class="tag">Eine Stunde pro Zeile: <code>Tag Stunde Fach Raum</code></p>
+  <h2>Stundenplan</h2><p class="tag">${(D?.timetable?.entries||[]).length?'Der Plan wird automatisch aus dem Schulportal geladen. Der eigene Text dient nur als Ersatz.':'Noch kein automatischer Portalplan verfügbar. Hier kannst du einen Ersatzplan eintragen.'} Format: <code>Mo 1 Mathe A12</code></p>
   <textarea id="tt" placeholder="Mo 1 Mathe A12&#10;Mo 2 Deutsch B05&#10;Di 1 Englisch C01">${esc(S.tt)}</textarea>
   <div class="row" style="margin-top:10px"><button id="sv">Speichern</button><button class="ghost" id="rf">Portal neu laden</button><button class="ghost" id="lo">Abmelden</button></div>`}
 };
