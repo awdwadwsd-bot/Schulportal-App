@@ -6,10 +6,8 @@ import httpx
 from cryptography.fernet import Fernet
 from fastapi import FastAPI, Header, HTTPException, Body, Depends
 from fastapi.responses import FileResponse
-from lanisapi import LanisClient, LanisAccount
-from lanisapi.exceptions import WrongCredentialsError
-from lanisapi.helpers.request import Request
-import lanisapi.client as _lc
+from pylanis import Lanis
+from pylanis.lanisapi.exceptions import WrongCredentialsError
 
 E = os.environ
 TZ = ZoneInfo("Europe/Berlin")
@@ -46,46 +44,19 @@ def pick(o, fields):
     return out
 
 
-def _get_sid(url, cookies, schoolid):
-    """Ersatz für lanisapi.get_authentication_sid: das Schulportal hat das Cookie-Format geändert
-    (die Bibliothek wirft IndexError und schreibt zudem die Session-ID ins Log)."""
-    r = Request.head(url, cookies=cookies)
-    m = re.search(r"\bsid=([0-9a-fA-F]+)", r.headers.get("set-cookie") or "")
-    if not m:
-        raise WrongCredentialsError("Keine Sitzung erhalten")
-    ck = httpx.Cookies()
-    ck.set("i", schoolid)
-    ck.set("sid", m.group(1))
-    return ck
-
-
-_lc.get_authentication_sid = _get_sid
-
 LOCK = threading.Lock()  # lanisapi nutzt globalen Zustand -> immer nur ein Nutzer gleichzeitig
 
 
 def run(p, fn):
-    """Frisch einloggen, fn(client) ausführen, danach alles aufräumen (keine Session-Reste zwischen Nutzern)."""
+    """Pro Abruf eine eigene Lanis-Sitzung verwenden und danach schließen."""
     with LOCK:
-        c = None
+        c = Lanis(school_id=p["s"], username=p["n"], password=p["p"])
         try:
-            if os.path.exists("session.json"):
-                os.remove("session.json")
-            # lanisapi schließt seinen globalen HTTP-Client bei close() dauerhaft -> jedes Mal einen frischen anlegen
-            Request.client = httpx.Client(timeout=httpx.Timeout(30.0, connect=60.0))
-            c = LanisClient(LanisAccount(p["s"], p["n"], p["p"]))
-            c.authenticate(force=True)
-            if not c.authenticated:
-                raise WrongCredentialsError("Login fehlgeschlagen")
+            # Der SDK-Client meldet sich beim ersten Portalaufruf an.
+            c.get_available_apps()
             return fn(c)
         finally:
-            if c:
-                try:
-                    c.close()
-                except Exception:
-                    pass
-            if os.path.exists("session.json"):
-                os.remove("session.json")
+            c.reset()
 
 
 def part(name, fn, errors):
@@ -105,24 +76,18 @@ def fetch(c):
     def tasks():
         out = []
         for t in c.get_tasks() or []:
+            # "Mein Unterricht" enthält auch reine Unterrichtseinträge. Nur
+            # Einträge mit dem Portal-Feld realHomework sind Hausaufgaben.
+            description = (getattr(t, "description", "") or "").strip()
+            if not description:
+                continue
             d = pick(t, ["title", "date", "subject_name", "teacher", "description", "details"])
             d["id"] = hashlib.sha1(f"{d['title']}{d['date']}{d['subject_name']}".encode()).hexdigest()[:12]
             out.append(d)
         return out
 
     def sub():
-        try:
-            plan = c.get_substitution_plan()
-        except TypeError as ex:
-            # LanisAPI assumes the portal always returns a JSON list. Some schools/days
-            # return a scalar (for example 0) when there are no substitution rows.
-            if "'int' object is not iterable" not in str(ex):
-                raise
-            return {
-                "date": now.date().isoformat(),
-                "info": "Heute hat das Schulportal keine auswertbaren Vertretungseinträge geliefert.",
-                "items": [],
-            }
+        plan = c.get_substitution_plan()
         return {
             "date": plan.date.isoformat() if plan.date else None,
             "info": plan.info,
@@ -130,14 +95,23 @@ def fetch(c):
         }
 
     def cal():
-        r = c.get_calendar(now - dt.timedelta(days=7), now + dt.timedelta(days=90))
-        return [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in r.events]
+        events = c.get_calendar(now - dt.timedelta(days=7), now + dt.timedelta(days=90))
+        return [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in events]
+
+    def timetable():
+        plan = c.get_timetable()
+        return {
+            "class_name": plan.class_name,
+            "valid_from": plan.valid_from,
+            "entries": [pick(e, ["hour", "time", "day", "subject", "room", "teacher", "info", "duration"]) for e in plan.entries],
+        }
 
     return {
         "fetched": now.isoformat(),
         "tasks": part("Aufgaben", tasks, errors) or [],
         "sub": part("Vertretung", sub, errors),
         "cal": part("Kalender", cal, errors) or [],
+        "timetable": part("Stundenplan", timetable, errors) or {"class_name": "", "valid_from": "", "entries": []},
         "errors": errors,
     }
 
@@ -208,9 +182,8 @@ _schools = []
 
 def _load_schools():
     if not _schools:
-        for s in LanisClient(None).get_schools() or []:
-            g = lambda *k: next((str(s[x]) for x in k if x in s), "")
-            _schools.append({"id": g("Id", "id", "ID"), "name": g("Name", "name"), "city": g("Ort", "city", "Stadt")})
+        for s in Lanis.get_schools() or []:
+            _schools.append({"id": str(s.id), "name": str(s.name), "city": str(s.city)})
     return _schools
 
 
