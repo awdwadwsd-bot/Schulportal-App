@@ -8,6 +8,7 @@ from fastapi import FastAPI, Header, HTTPException, Body, Depends
 from fastapi.responses import FileResponse
 from lanisapi import LanisClient, LanisAccount
 from lanisapi.exceptions import WrongCredentialsError
+from lanisapi.helpers.request import Request
 
 E = os.environ
 TZ = ZoneInfo("Europe/Berlin")
@@ -54,6 +55,8 @@ def run(p, fn):
         try:
             if os.path.exists("session.json"):
                 os.remove("session.json")
+            # lanisapi schließt seinen globalen HTTP-Client bei close() dauerhaft -> jedes Mal einen frischen anlegen
+            Request.client = httpx.Client(timeout=httpx.Timeout(30.0, connect=60.0))
             c = LanisClient(LanisAccount(p["s"], p["n"], p["p"]))
             c.authenticate(force=True)
             if not c.authenticated:
@@ -141,7 +144,7 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 def index():
-    return FileResponse("index.html")
+    return FileResponse("index.html", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/ping")
