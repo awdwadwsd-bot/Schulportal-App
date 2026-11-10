@@ -102,7 +102,7 @@ ha(){
   ${items().map(hw).join('')||'<p class="sub">Noch nichts da.</p>'}`;
 },
 vertretung(){
-  const s=D?.sub;if(!s)return'<h1>Vertretung</h1><p class="sub">Lade…</p>';
+  const s=D?.sub;if(!s)return'<h1>Vertretung</h1><p class="sub">'+(D?'Nicht verfügbar.':'Lade…')+'</p>';
   return `<h1>Vertretung</h1><p class="sub">${s.date?fmt(s.date):''}</p>${s.info?`<div class="card">${esc(s.info)}</div>`:''}
   <div class="scroll"><table><tr><th>Std</th><th>Klasse</th><th>Fach</th><th>Lehrer</th><th>Vertr.</th><th>Raum</th><th>Info</th></tr>
   ${s.items.map(i=>`<tr>${['hours','class_name','subject','teacher','substitute','room','notice'].map(f=>`<td>${esc(i[f])}</td>`).join('')}</tr>`).join('')}</table></div>`;
@@ -123,7 +123,8 @@ set(){return `<h1>Mehr</h1>
 
 function render(){
   $('#nav').innerHTML=TABS.map(([k,i,l])=>`<button class="${k==tab?'on':''}" data-tab="${k}"><span>${i}</span>${l}</button>`).join('');
-  $('#app').innerHTML=(err?`<p class="err">⚠️ ${esc(err)}</p>`:'')+views[tab]();
+  const ER=Object.entries(D?.errors||{}).map(([k,v])=>`${k}: ${v}`).join(' · ');
+  $('#app').innerHTML=(err?`<p class="err">⚠️ ${esc(err)}</p>`:'')+(ER?`<p class="err">⚠️ Nicht geladen – ${esc(ER)}</p>`:'')+views[tab]();
 }
 document.addEventListener('click',e=>{
   const sc=e.target.closest('[data-sid]');if(sc){$('#sid').value=sc.dataset.sid;$('#sq').value=sc.dataset.sname;$('#sres').innerHTML='';return}

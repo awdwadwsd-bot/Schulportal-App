@@ -1,4 +1,4 @@
-import os, re, json, time, asyncio, hashlib, threading, datetime as dt
+import os, re, json, time, asyncio, hashlib, threading, traceback, datetime as dt
 from contextlib import asynccontextmanager
 from zoneinfo import ZoneInfo
 
@@ -88,24 +88,46 @@ def run(p, fn):
                 os.remove("session.json")
 
 
+def part(name, fn, errors):
+    """Jeder Teil (Aufgaben, Vertretung, Kalender) darf einzeln scheitern, der Rest wird trotzdem angezeigt."""
+    try:
+        return fn()
+    except Exception as ex:
+        print(f"FETCH {name} FAIL:", traceback.format_exc(), flush=True)
+        errors[name] = f"{type(ex).__name__}: {ex}"
+        return None
+
+
 def fetch(c):
     now = dt.datetime.now(TZ).replace(tzinfo=None)
-    tasks = []
-    for t in c.get_tasks():
-        d = pick(t, ["title", "date", "subject_name", "teacher", "description", "details"])
-        d["id"] = hashlib.sha1(f"{d['title']}{d['date']}{d['subject_name']}".encode()).hexdigest()[:12]
-        tasks.append(d)
-    plan = c.get_substitution_plan()
-    cal = c.get_calendar(now - dt.timedelta(days=7), now + dt.timedelta(days=90))
-    return {
-        "fetched": now.isoformat(),
-        "tasks": tasks,
-        "sub": {
+    errors = {}
+
+    def tasks():
+        out = []
+        for t in c.get_tasks() or []:
+            d = pick(t, ["title", "date", "subject_name", "teacher", "description", "details"])
+            d["id"] = hashlib.sha1(f"{d['title']}{d['date']}{d['subject_name']}".encode()).hexdigest()[:12]
+            out.append(d)
+        return out
+
+    def sub():
+        plan = c.get_substitution_plan()
+        return {
             "date": plan.date.isoformat() if plan.date else None,
             "info": plan.info,
             "items": [pick(s, ["hours", "class_name", "subject", "teacher", "substitute", "room", "notice"]) for s in plan.substitutions],
-        },
-        "cal": [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in cal.events],
+        }
+
+    def cal():
+        r = c.get_calendar(now - dt.timedelta(days=7), now + dt.timedelta(days=90))
+        return [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in r.events]
+
+    return {
+        "fetched": now.isoformat(),
+        "tasks": part("Aufgaben", tasks, errors) or [],
+        "sub": part("Vertretung", sub, errors),
+        "cal": part("Kalender", cal, errors) or [],
+        "errors": errors,
     }
 
 
