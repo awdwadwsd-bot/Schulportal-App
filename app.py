@@ -247,7 +247,7 @@ def fetch(c):
         row = mappen.css_first(".row") if mappen else None
         found = []
         if row is not None:
-            for mappe in row.css(":scope > *"):
+            for mappe in tree.css("#mappen .row > div"):
                 link = mappe.css_first("a.btn.btn-primary")
                 heading = mappe.css_first("h2")
                 if link is None or heading is None:
