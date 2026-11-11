@@ -161,11 +161,29 @@ body.is-loading{padding:0!important}body.is-loading main#app{max-width:none;widt
 .attendance-values small{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mute);font-size:.68rem;text-transform:uppercase}
 .attendance-values b{font-size:1rem;color:var(--accent)}
 @media(max-width:700px){.settings-grid{grid-template-columns:1fr}.settings-card>summary{min-height:88px;padding:15px}.settings-body{padding:4px 15px 16px}.attendance-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+@media(max-width:899px){
+ body{padding:0 0 calc(18px + env(safe-area-inset-bottom))}
+ main#app{width:100%;max-width:760px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 15px 30px;min-height:100dvh}
+ .brandbar{margin-bottom:12px}
+ .app-top{display:flex;align-items:center;justify-content:flex-start;margin:4px 0 14px}
+ #mobileMenuToggle{display:inline-flex;align-items:center;gap:9px;padding:10px 13px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 3px 12px #00000012}
+ #mobileMenuToggle .menu-icon{font-size:1.15rem}
+ #navScrim{position:fixed;inset:0;z-index:19;display:block;border:0;border-radius:0;padding:0;background:#05081688;opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+ nav{top:0;bottom:0;left:0;right:auto;width:min(84vw,310px);display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:6px;padding:calc(22px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom));border:0;border-right:1px solid var(--line);border-radius:0 20px 20px 0;overflow-y:auto;overscroll-behavior:contain;transform:translateX(-105%);visibility:hidden;transition:transform .22s ease,visibility .22s;z-index:20;box-shadow:12px 0 40px #0003}
+ nav:before{content:"MySchulportal+\\A by Lukas";white-space:pre;flex:0 0 64px;padding:10px 0 0 56px;background-image:url("/icon.svg");background-repeat:no-repeat;background-size:40px 40px;background-position:5px 3px;margin-bottom:8px;color:var(--ink);font:700 14px/1.25 Arial,sans-serif;letter-spacing:-.02em}
+ nav button{display:flex;align-items:center;justify-content:flex-start;gap:12px;text-align:left;font-size:.95rem;padding:11px 12px;min-height:44px;flex:0 0 auto}
+ nav button span{font-size:1.1rem;width:24px;text-align:center}
+ body.menu-open nav{transform:translateX(0);visibility:visible}
+ body.menu-open #navScrim{opacity:1;visibility:visible}
+}
+@media(min-width:900px){#mobileMenuToggle,#navScrim{display:none}}
 </style>
 </head>
 <body>
 <main id="app"></main>
 <div id="feedback-root"></div>
+<button id="navScrim" aria-label="Menü schließen"></button>
 <nav id="nav"></nav>
 <script>
 const $=s=>document.querySelector(s);
@@ -359,16 +377,18 @@ function render(){
   document.body.classList.remove('is-loading');
   $('#nav').innerHTML=TABS.map(([k,i,l])=>`<button class="${k==tab?'on':''}" data-tab="${k}"><span>${i}</span>${l}</button>`).join('');
   const errors=Object.entries(D?.errors||{});const noSub=errors.some(([k,v])=>k==='Vertretung'&&String(v).includes('response: -1'));const ER=errors.filter(([k])=>!(noSub&&k==='Vertretung')).map(([k,v])=>`${k}: ${v}`).join(' · ');
-  $('#app').innerHTML=brand+`<div class="app-top"><button id="themeToggle" class="theme-toggle" aria-label="Darstellung wechseln">${theme==='dark'?'☀️ Hell':'🌙 Dunkel'}</button></div>`+(err?`<p class="err">⚠️ ${esc(err)}</p>`:'')+(noSub?'<div class="notice"><span class="notice-icon">ℹ️</span><div><b>Kein Vertretungsplan verfügbar</b><br>Deine Schule stellt über das Schulportal aktuell keine Vertretungsdaten bereit.</div></div>':'')+(ER?`<p class="err">⚠️ Nicht geladen – ${esc(ER)}</p>`:'')+views[tab]();
+  $('#app').innerHTML=brand+`<div class="app-top"><button id="mobileMenuToggle" aria-expanded="false" aria-controls="nav"><span class="menu-icon">☰</span><span>Menü</span></button><button id="themeToggle" class="theme-toggle" aria-label="Darstellung wechseln">${theme==='dark'?'☀️ Hell':'🌙 Dunkel'}</button></div>`+(err?`<p class="err">⚠️ ${esc(err)}</p>`:'')+(noSub?'<div class="notice"><span class="notice-icon">ℹ️</span><div><b>Kein Vertretungsplan verfügbar</b><br>Deine Schule stellt über das Schulportal aktuell keine Vertretungsdaten bereit.</div></div>':'')+(ER?`<p class="err">⚠️ Nicht geladen – ${esc(ER)}</p>`:'')+views[tab]();
   const feedbackRoot=$('#feedback-root');if(feedbackRoot)feedbackRoot.innerHTML=feedbackWidget();
 }
 document.addEventListener('click',async e=>{
+  if(e.target.closest('#mobileMenuToggle')){const opened=document.body.classList.toggle('menu-open');e.target.closest('#mobileMenuToggle').setAttribute('aria-expanded',String(opened));return}
+  if(e.target.closest('#navScrim')){document.body.classList.remove('menu-open');return}
   if(e.target.closest('[data-feedback-open]')){feedbackOpen=true;feedbackMessage='';return render()}
   if(e.target.closest('[data-feedback-close]')){feedbackOpen=false;return render()}
   if(e.target.closest('[data-feedback-inbox]')){try{feedbackItems=await api('admin/feedback')}catch(x){err=x.message}return render()}
   const feedbackDelete=e.target.closest('[data-feedback-delete]');if(feedbackDelete){try{await api('admin/feedback/'+encodeURIComponent(feedbackDelete.dataset.feedbackDelete),{method:'DELETE'});feedbackItems=feedbackItems.filter(r=>r.id!==feedbackDelete.dataset.feedbackDelete)}catch(x){err=x.message}return render()}
   const sc=e.target.closest('[data-sid]');if(sc){$('#sid').value=sc.dataset.sid;$('#sq').value=sc.dataset.sname;$('#sres').innerHTML='';return}
-  const t=e.target.closest('[data-tab]');if(t){tab=t.dataset.tab;return render()}
+  const t=e.target.closest('[data-tab]');if(t){tab=t.dataset.tab;document.body.classList.remove('menu-open');return render()}
   const us=e.target.closest('[data-unterricht-section]');if(us){unterrichtSection=us.dataset.unterrichtSection;return render()}
   if(e.target.closest('[data-dashboard-edit]')){dashboardEdit=!dashboardEdit;return render()}
   if(e.target.closest('[data-user-export]')){const backup=backupData();downloadText('schulportal-backup-'+today()+'.json',JSON.stringify(backup,null,2),'application/json');return}
