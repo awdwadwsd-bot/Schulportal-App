@@ -162,6 +162,19 @@ def fetch(c):
         events = c.get_calendar(now - dt.timedelta(days=30), now + dt.timedelta(days=365))
         return [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in events]
 
+    def courses():
+        groups = c.get_learning_groups() or []
+        return [
+            {
+                "id": getattr(group, "id", None),
+                "semester": getattr(group, "semester", None),
+                "course_name": getattr(group, "course_name", "") or "",
+                "course_code": getattr(group, "course_code", "") or "",
+                "teacher": getattr(group, "teacher", "") or "",
+            }
+            for group in groups
+        ]
+
     def timetable():
         plan = c.get_timetable()
         return {
@@ -173,6 +186,7 @@ def fetch(c):
     return {
         "fetched": now.isoformat(),
         "tasks": part("Aufgaben", tasks, errors) or [],
+        "courses": part("Kurse", courses, errors) or [],
         "sub": part("Vertretung", sub, errors),
         "cal": part("Kalender", cal, errors) or [],
         "timetable": part("Stundenplan", timetable, errors) or {"class_name": "", "valid_from": "", "entries": []},
@@ -188,6 +202,7 @@ def fetch_initial(c):
     return {
         "fetched": now.isoformat(),
         "tasks": [],
+        "courses": [],
         "sub": None,
         "cal": [],
         "timetable": {
