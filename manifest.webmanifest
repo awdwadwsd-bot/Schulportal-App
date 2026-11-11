@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Schulportal Hessen Reimagined",
-  "short_name": "Schulportal",
-  "description": "Stundenplan, Aufgaben und Arbeiten auf einen Blick.",
+  "name": "MySchulportal+",
+  "short_name": "MySchulportal+",
+  "description": "Dein Stundenplan, Aufgaben, Arbeiten und Kalender auf einen Blick.",
   "lang": "de-DE",
   "start_url": "/",
   "scope": "/",
