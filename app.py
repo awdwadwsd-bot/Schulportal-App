@@ -144,7 +144,7 @@ def fetch(c):
         client = c._client
         if client is None:
             raise RuntimeError("Schulportal-Sitzung ist nicht initialisiert")
-        html = client._call(lambda active: lanis_tasks.fetch_page(active.session))
+        html = client._call(lambda: lanis_tasks.fetch_page(client.session))
         out = []
         for t in lanis_tasks.parse_tasks(html):
             # Nur Einträge mit echtem Portal-Hausaufgabentext übernehmen.
@@ -173,7 +173,7 @@ def fetch(c):
         if client is None:
             raise RuntimeError("Schulportal-Sitzung ist nicht initialisiert")
         start, end = now - dt.timedelta(days=30), now + dt.timedelta(days=365)
-        raw = client._call(lambda active: lanis_calendar.fetch_events(active.session, start, end))
+        raw = client._call(lambda: lanis_calendar.fetch_events(client.session, start, end))
         events = lanis_calendar.parse_calendar(raw, start, end).events
         return [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in events]
 
