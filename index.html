@@ -448,7 +448,7 @@ document.addEventListener('click',async e=>{
   const adminTab=e.target.closest('[data-admin-section]');if(adminTab){adminSection=adminTab.dataset.adminSection;return render()}
   const adminPreset=e.target.closest('[data-admin-command]');if(adminPreset){const input=$('#admin-command');if(input){input.value=adminPreset.dataset.adminCommand;$('#admin-console-form')?.requestSubmit()}return}
   if(e.target.closest('[data-feedback-close]')){feedbackOpen=false;return render()}
-  if(e.target.closest('[data-feedback-inbox]')){try{feedbackItems=await api('admin/feedback')}catch(x){err=x.message}return render()}
+  if(e.target.closest('[data-feedback-inbox]')){feedbackOpen=true;try{feedbackItems=await api('admin/feedback')}catch(x){err=x.message}return render()}
   const feedbackDelete=e.target.closest('[data-feedback-delete]');if(feedbackDelete){try{await api('admin/feedback/'+encodeURIComponent(feedbackDelete.dataset.feedbackDelete),{method:'DELETE'});feedbackItems=feedbackItems.filter(r=>r.id!==feedbackDelete.dataset.feedbackDelete)}catch(x){err=x.message}return render()}
   const sc=e.target.closest('[data-sid]');if(sc){$('#sid').value=sc.dataset.sid;$('#sq').value=sc.dataset.sname;$('#sres').innerHTML='';return}
   const t=e.target.closest('[data-tab]');if(t){tab=t.dataset.tab;document.body.classList.remove('menu-open');return render()}
