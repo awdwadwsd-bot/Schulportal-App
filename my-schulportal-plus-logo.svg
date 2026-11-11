@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 130" width="760" height="260">
+<title>My Schulportal+</title>
+<g transform="translate(20,20)">
+<rect width="90" height="90" rx="22" fill="#4F46E5"/>
+<g fill="#818CF8" opacity=".4">
+<rect x="27" y="14" width="10" height="10" rx="3"/><rect x="40" y="14" width="10" height="10" rx="3"/><rect x="53" y="14" width="10" height="10" rx="3"/>
+<rect x="40" y="27" width="10" height="10" rx="3"/><rect x="27" y="40" width="10" height="10" rx="3"/><rect x="53" y="40" width="10" height="10" rx="3"/>
+<rect x="27" y="53" width="10" height="10" rx="3"/><rect x="40" y="53" width="10" height="10" rx="3"/><rect x="53" y="53" width="10" height="10" rx="3"/>
+<rect x="27" y="66" width="10" height="10" rx="3"/><rect x="53" y="66" width="10" height="10" rx="3"/>
+</g>
+<g fill="#fff">
+<rect x="14" y="14" width="10" height="10" rx="3"/><rect x="66" y="14" width="10" height="10" rx="3"/>
+<rect x="14" y="27" width="10" height="10" rx="3"/><rect x="27" y="27" width="10" height="10" rx="3"/><rect x="53" y="27" width="10" height="10" rx="3"/><rect x="66" y="27" width="10" height="10" rx="3"/>
+<rect x="14" y="40" width="10" height="10" rx="3"/><rect x="40" y="40" width="10" height="10" rx="3"/><rect x="66" y="40" width="10" height="10" rx="3"/>
+<rect x="14" y="53" width="10" height="10" rx="3"/><rect x="66" y="53" width="10" height="10" rx="3"/>
+<rect x="14" y="66" width="10" height="10" rx="3"/><rect x="66" y="66" width="10" height="10" rx="3"/>
+</g>
+<rect x="40" y="66" width="10" height="10" rx="3" fill="#F59E0B"/>
+<path d="M42 71H48M45 68V74" stroke="#312E81" stroke-width="2" stroke-linecap="round" fill="none"/>
+</g>
+<text x="130" y="58" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="500" fill="#4F46E5">My</text>
+<text x="130" y="92" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700" fill="#1E1B4B">Schulportal<tspan fill="#F59E0B">+</tspan></text>
+</svg>
