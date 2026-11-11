@@ -98,7 +98,7 @@ body.is-loading{padding:0!important}body.is-loading main#app{max-width:none;widt
 .course-card{margin:0;min-height:180px;padding:19px}
 .course-head{display:flex;align-items:center;gap:12px}
 .course-head h2{margin:0 0 4px}
-.course-icon,.attendance-icon{display:grid;place-items:center;flex:none;width:46px;height:46px;border-radius:14px;background:var(--accent-soft);color:var(--accent);font-size:1.25rem}
+.course-icon{display:grid;place-items:center;flex:none;width:46px;height:46px;border-radius:14px;background:var(--accent-soft);color:var(--accent);font-size:1.25rem}
 .course-semester{margin:12px 0}
 .course-homework{margin-top:15px;padding:12px;border:1px solid #16a7797a;background:color-mix(in srgb,#16a779 7%,var(--card));border-radius:12px;line-height:1.5}
 .course-homework>b{color:#11a57b;font-size:.83rem}
@@ -129,7 +129,7 @@ body.is-loading{padding:0!important}body.is-loading main#app{max-width:none;widt
 .selected-agenda .day-event-detail{padding:10px 0;border-top:1px solid var(--line)}
 .day-event-title{font-weight:750;color:var(--ink)}
 .day-event-time,.day-event-description{margin-top:4px;color:var(--mute);font-size:.82rem;line-height:1.45}
-@media(max-width:700px){.calendar-grid-shell{padding:6px}.attendance-unavailable{display:block}.attendance-icon{margin-bottom:12px}.course-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.calendar-grid-shell{padding:6px}.course-grid{grid-template-columns:1fr}}
 
 .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .settings-card{margin:0;padding:0;overflow:hidden;transition:border-color .16s,transform .16s}
@@ -148,19 +148,7 @@ body.is-loading{padding:0!important}body.is-loading main#app{max-width:none;widt
 .settings-field input{max-width:420px}
 .settings-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:14px}
 .settings-links .button-link{font-size:.84rem}
-.attendance-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.attendance-stat{display:grid;gap:5px;padding:15px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
-.attendance-stat span{font-size:.77rem;color:var(--mute);font-weight:700}
-.attendance-stat b{font-size:1.35rem;color:var(--ink)}
-.attendance-stat small{font-size:.72rem;color:var(--mute)}
-.attendance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
-.attendance-course{margin:0}
-.attendance-course h2{margin:2px 0 4px}
-.attendance-values{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.attendance-values>div{display:grid;gap:5px;min-width:92px;padding:9px 11px;border-radius:10px;background:var(--header)}
-.attendance-values small{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mute);font-size:.68rem;text-transform:uppercase}
-.attendance-values b{font-size:1rem;color:var(--accent)}
-@media(max-width:700px){.settings-grid{grid-template-columns:1fr}.settings-card>summary{min-height:88px;padding:15px}.settings-body{padding:4px 15px 16px}.attendance-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.settings-grid{grid-template-columns:1fr}.settings-card>summary{min-height:88px;padding:15px}.settings-body{padding:4px 15px 16px}}
 
 @media(max-width:899px){
  body{padding:0 0 calc(18px + env(safe-area-inset-bottom))}
@@ -187,11 +175,6 @@ body.is-loading{padding:0!important}body.is-loading main#app{max-width:none;widt
 .grade-label-field{grid-column:1/-1}
 @media(max-width:600px){.grade-setup-grid{grid-template-columns:1fr}.grade-weight-fields{grid-column:auto}.grade-label-field{grid-column:auto}}
 
-.attendance-inline{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:10px 0 18px}
-.attendance-inline-values{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
-.attendance-inline-values span{display:flex;align-items:center;gap:6px;background:var(--header);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
-.attendance-inline-values small{color:var(--mute)}.attendance-inline-values strong{color:var(--accent)}
-.attendance-inline-empty{align-items:flex-start}.attendance-inline-empty p{margin:0;flex:1}
 .lesson-content-list{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}
 .lesson-content-list>b{font-size:.85rem;color:var(--accent)}
 .lesson-content{margin-top:9px;padding:10px 11px;background:var(--header);border:1px solid var(--line);border-radius:11px}
@@ -326,24 +309,17 @@ heute(){
   ${widgets.substitution?`<h2>Vertretung</h2>${sub.length?`<p class="sub">${sub.length} Einträge im Plan – Details im Tab Vertretung.</p>`:'<p class="sub">Keine Einträge.</p>'}`:''}`;
 },
 unterricht(){
-  const courseList=D?.courses||[],homework=items().filter(h=>h.desc),attendance=D?.attendance||{},sectionButtons='<div class="unterricht-tabs">'+[['kurse','Kurse'],['abgaben','Abgaben'],['anwesenheit','Anwesenheit']].map(([id,name])=>'<button class="'+(unterrichtSection===id?'active':'')+'" data-unterricht-section="'+id+'">'+name+'</button>').join('')+'</div>';
-  const label=k=>k?String(k).replace(/_/g,' ').replace(/^\p{L}/u,x=>x.toLocaleUpperCase('de')):'Sonstiges';
-  if(unterrichtSection==='anwesenheit'){
-    const totals=attendance.totals||{},attendanceCourses=attendance.courses||[];
-    const statCards=Object.entries(totals).map(([k,v])=>'<div class="attendance-stat"><span>'+esc(label(k))+'</span><b>'+esc(v)+'</b><small>Unterrichtsstunden</small></div>').join('');
-    const courseCards=attendanceCourses.map(c=>'<article class="card attendance-course"><h2>'+esc(c.name||'Kurs')+'</h2>'+(c.teacher?'<div class="tag">'+esc(c.teacher)+'</div>':'')+'<div class="attendance-values">'+Object.entries(c.values||{}).map(([k,v])=>'<div><small>'+esc(label(k))+'</small><b>'+esc(v)+'</b></div>').join('')+'</div></article>').join('');
-    return '<h1>Mein Unterricht</h1><p class="sub">Kursmappen, Stundeninhalte und Anwesenheit aus deinem Schulportal.</p>'+sectionButtons+(attendance.available?'<h2>Gesamt</h2><div class="attendance-stats">'+statCards+'</div><h2>Nach Kurs</h2><div class="attendance-grid">'+courseCards+'</div>':'<section class="card attendance-unavailable"><span class="attendance-icon">📊</span><div><h2 style="margin:0 0 6px">Keine Anwesenheitsdaten erhalten</h2><p class="sub">'+esc(attendance.reason||'Das Schulportal hat keine Anwesenheitsübersicht geliefert.')+'</p><a class="button-link" href="https://start.schulportal.hessen.de/meinunterricht.php" target="_blank" rel="noopener">Mein Unterricht im Schulportal öffnen ↗</a></div></section>');
-  }
+  const courseList=D?.courses||[],homework=items().filter(h=>h.desc),sections=[['kurse','Kurse'],['abgaben','Abgaben']],sectionButtons='<div class="unterricht-tabs">'+sections.map(([id,name])=>'<button class="'+(unterrichtSection===id?'active':'')+'" data-unterricht-section="'+id+'">'+name+'</button>').join('')+'</div>';
   if(unterrichtSection==='abgaben')return '<h1>Mein Unterricht</h1><p class="sub">Hausaufgaben und Abgaben aus deinen Kursen.</p>'+sectionButtons+(homework.map(hw).join('')||'<p class="sub">Keine Aufgaben mit Hausaufgabentext gefunden.</p>');
   const code=c=>subjectKey(String(c.course_code||c.course_name||'').trim().split(/\s+/)[0]),matches=c=>homework.filter(h=>{const sub=subjectKey(h.subj);return sub&&(sub===subjectKey(c.course_name)||sub===code(c)||String(c.course_name||'').toLocaleLowerCase('de').includes(String(h.subj||'').toLocaleLowerCase('de')))});
-  const summary=attendance.available?'<section class="card attendance-inline"><b>📊 Anwesenheit</b><div class="attendance-inline-values">'+Object.entries(attendance.totals||{}).map(([k,v])=>'<span><small>'+esc(label(k))+'</small><strong>'+esc(v)+'</strong></span>').join('')+'</div><button class="ghost small-button" data-unterricht-section="anwesenheit">Details ansehen</button></section>':'<section class="card attendance-inline attendance-inline-empty"><b>📊 Anwesenheit</b><p class="tag">'+esc(attendance.reason||'Anwesenheitsdaten noch nicht verfügbar.')+'</p><button class="ghost small-button" data-unterricht-section="anwesenheit">Status ansehen</button></section>';
   const courseCards=courseList.map(course=>{
     const title=course.course_name||course.course_code||'Kurs',tasks=matches(course),entries=(course.entries||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,3);
     const content=entries.length?'<div class="lesson-content-list"><b>📖 Stundeninhalte</b>'+entries.map(entry=>'<article class="lesson-content"><div class="row"><strong>'+esc(entry.topic||'Unterrichtseintrag')+'</strong><span class="tag">'+esc(entry.date?fmt(entry.date):'')+'</span></div>'+(entry.content?'<p>'+esc(entry.content)+'</p>':'')+(entry.homework?'<div class="lesson-homework"><b>Hausaufgabe</b><br>'+esc(entry.homework)+'</div>':'')+'</article>').join('')+'</div>':'';
     const taskList=tasks.length?'<div class="course-homework"><b>📚 Offene Hausaufgaben</b>'+tasks.slice(0,3).map(task=>'<div class="course-task"><b>'+esc(task.title)+'</b>'+(task.due?'<div class="tag">Fällig '+esc(fmt(task.due))+'</div>':'')+'<div class="homework-preview" style="white-space:normal;-webkit-line-clamp:4">'+esc(task.desc)+'</div></div>')+'</div>':'';
     return '<article class="card course-card"><div class="course-head"><span class="course-icon">🎓</span><div><h2>'+esc(title)+'</h2><div class="tag">'+esc(course.teacher||'Lehrkraft nicht angegeben')+(course.course_code?' · '+esc(course.course_code):'')+'</div></div></div>'+content+taskList+(!content&&!taskList?'<p class="tag course-empty">Noch keine aktuellen Stundeninhalte oder Hausaufgaben gefunden.</p>':'')+'</article>';
   }).join('');
-  return '<h1>Mein Unterricht</h1><p class="sub">Kursmappen, aktuelle Stundeninhalte, Hausaufgaben und Anwesenheit.</p>'+sectionButtons+summary+(courseList.length?'<div class="course-grid">'+courseCards+'</div>':'<section class="card"><b>Kurse sind noch nicht geladen</b><p class="sub">Aktualisiere die Portal-Daten oder öffne Mein Unterricht direkt im Schulportal.</p><a class="button-link" href="https://start.schulportal.hessen.de/meinunterricht.php" target="_blank" rel="noopener">Schulportal öffnen ↗</a></section>');
+  return '<h1>Mein Unterricht</h1><p class="sub">Kursmappen, aktuelle Stundeninhalte und Hausaufgaben.</p>'+sectionButtons+(courseList.length?'<div class="course-grid">'+courseCards+'</div>':'<section class="card"><b>Kurse sind noch nicht geladen</b><p class="sub">Aktualisiere die Portal-Daten oder öffne Mein Unterricht direkt im Schulportal.</p><a class="button-link" href="https://start.schulportal.hessen.de/meinunterricht.php" target="_blank" rel="noopener">Schulportal öffnen ↗</a></section>');
+
 },
 plan(){const automatic=(D?.timetable?.entries||[]).length>0,names={Mo:'Montag',Di:'Dienstag',Mi:'Mittwoch',Do:'Donnerstag',Fr:'Freitag'};return '<h1>Stundenplan</h1><p class="sub">'+(automatic?'Automatisch aus dem Schulportal übernommen.':'Noch kein Portalplan gefunden; eigener Plan bleibt als Ersatz verfügbar.')+' Aktive Hausaufgaben stehen direkt unter dem passenden Fach.</p><div class="week-scroll"><div class="week-view">'+DAYS.map(k=>'<section class="day-column"><h2>'+names[k]+'</h2>'+lessons(ttDay(k),k)+'</section>').join('')+'</div></div>'}, 
 ha(){
