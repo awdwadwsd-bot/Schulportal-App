@@ -200,6 +200,9 @@ body.is-loading{padding:0!important}body.is-loading main#app{max-width:none;widt
 .lesson-homework{margin-top:8px;padding:8px 10px;border-radius:9px;background:color-mix(in srgb,#16a779 8%,var(--card));color:var(--soft-text);font-size:.88rem}
 .lesson-homework b{color:#11a57b}
 @media(max-width:600px){.attendance-inline{align-items:flex-start}.attendance-inline-values{width:100%;flex-basis:100%}.lesson-content .row{flex-direction:column}}
+
+.lesson-content .row strong{font-size:.94rem;font-weight:700;line-height:1.4}
+.lesson-content .row .tag{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -336,7 +339,7 @@ unterricht(){
   const summary=attendance.available?'<section class="card attendance-inline"><b>📊 Anwesenheit</b><div class="attendance-inline-values">'+Object.entries(attendance.totals||{}).map(([k,v])=>'<span><small>'+esc(label(k))+'</small><strong>'+esc(v)+'</strong></span>').join('')+'</div><button class="ghost small-button" data-unterricht-section="anwesenheit">Details ansehen</button></section>':'<section class="card attendance-inline attendance-inline-empty"><b>📊 Anwesenheit</b><p class="tag">'+esc(attendance.reason||'Anwesenheitsdaten noch nicht verfügbar.')+'</p><button class="ghost small-button" data-unterricht-section="anwesenheit">Status ansehen</button></section>';
   const courseCards=courseList.map(course=>{
     const title=course.course_name||course.course_code||'Kurs',tasks=matches(course),entries=(course.entries||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,3);
-    const content=entries.length?'<div class="lesson-content-list"><b>📖 Stundeninhalte</b>'+entries.map(entry=>'<article class="lesson-content"><div class="row"><strong>'+esc(entry.topic||'Unterrichtseintrag')+'</strong><span class="tag">'+esc(entry.date||'')+'</span></div>'+(entry.content?'<p>'+esc(entry.content)+'</p>':'')+(entry.homework?'<div class="lesson-homework"><b>Hausaufgabe</b><br>'+esc(entry.homework)+'</div>':'')+'</article>').join('')+'</div>':'';
+    const content=entries.length?'<div class="lesson-content-list"><b>📖 Stundeninhalte</b>'+entries.map(entry=>'<article class="lesson-content"><div class="row"><strong>'+esc(entry.topic||'Unterrichtseintrag')+'</strong><span class="tag">'+esc(entry.date?fmt(entry.date):'')+'</span></div>'+(entry.content?'<p>'+esc(entry.content)+'</p>':'')+(entry.homework?'<div class="lesson-homework"><b>Hausaufgabe</b><br>'+esc(entry.homework)+'</div>':'')+'</article>').join('')+'</div>':'';
     const taskList=tasks.length?'<div class="course-homework"><b>📚 Offene Hausaufgaben</b>'+tasks.slice(0,3).map(task=>'<div class="course-task"><b>'+esc(task.title)+'</b>'+(task.due?'<div class="tag">Fällig '+esc(fmt(task.due))+'</div>':'')+'<div class="homework-preview" style="white-space:normal;-webkit-line-clamp:4">'+esc(task.desc)+'</div></div>')+'</div>':'';
     return '<article class="card course-card"><div class="course-head"><span class="course-icon">🎓</span><div><h2>'+esc(title)+'</h2><div class="tag">'+esc(course.teacher||'Lehrkraft nicht angegeben')+(course.course_code?' · '+esc(course.course_code):'')+'</div></div></div>'+content+taskList+(!content&&!taskList?'<p class="tag course-empty">Noch keine aktuellen Stundeninhalte oder Hausaufgaben gefunden.</p>':'')+'</article>';
   }).join('');
