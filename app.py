@@ -18,9 +18,12 @@ cache = {}  # uid -> (zeit, daten)
 HOOK = re.compile(r"^https://(discord|discordapp)\.com/api/webhooks/\d+/[\w-]+$")
 TOPIC = re.compile(r"^[A-Za-z0-9_-]{6,64}$")
 BLOG_KEY = "__blog_posts__"
+FEEDBACK_KEY = "__feedback__"
 PRIVACY_KEY = "__privacy_acceptances__"
-POLICY_VERSION = "2026-11-10-v1"
+POLICY_VERSION = "2026-11-11-v1"
 STATE_LOCK = threading.RLock()
+feedback_limits = {}
+FEEDBACK_LOCK = threading.Lock()
 
 
 def db():
@@ -251,6 +254,12 @@ def pwa_icon():
     return FileResponse(Path(__file__).resolve().parent / "icon.svg", media_type="image/svg+xml", headers={"Cache-Control": "public, max-age=86400"})
 
 
+@app.get("/my-schulportal-plus-logo.svg")
+def brand_logo():
+    from pathlib import Path
+    return FileResponse(Path(__file__).resolve().parent / "my-schulportal-plus-logo.svg", media_type="image/svg+xml", headers={"Cache-Control": "public, max-age=86400"})
+
+
 @app.get("/datenschutz")
 def privacy_page():
     from pathlib import Path
@@ -333,6 +342,49 @@ def delete_blog_post(post_id: str, p: dict = Depends(auth)):
     return {"ok": True}
 
 
+@app.post("/api/feedback")
+def submit_feedback(b: dict = Body(...), p: dict = Depends(auth)):
+    category = str(b.get("category", ""))
+    message = str(b.get("message", "")).strip()
+    if category not in {"bug", "idee", "sonstiges"}:
+        raise HTTPException(400, "Bitte wähle eine Kategorie")
+    if not message or len(message) > 3000:
+        raise HTTPException(400, "Bitte gib eine Nachricht mit höchstens 3000 Zeichen ein")
+    now = time.time()
+    with FEEDBACK_LOCK:
+        previous = feedback_limits.get(p["u"], 0)
+        if now - previous < 30:
+            raise HTTPException(429, "Bitte warte kurz, bevor du einen weiteren Bericht sendest")
+        feedback_limits[p["u"]] = now
+    d = db()
+    reports = d.get(FEEDBACK_KEY, [])
+    report = {"id": uuid.uuid4().hex, "category": category, "message": message,
+              "page": str(b.get("page", ""))[:120], "created": dt.datetime.now(TZ).isoformat()}
+    reports.append(report)
+    d[FEEDBACK_KEY] = reports[-100:]
+    save_db(d)
+    return {"ok": True}
+
+
+@app.get("/api/admin/feedback")
+def list_feedback(p: dict = Depends(auth)):
+    require_admin(p)
+    return sorted(db().get(FEEDBACK_KEY, []), key=lambda item: item.get("created", ""), reverse=True)
+
+
+@app.delete("/api/admin/feedback/{report_id}")
+def delete_feedback(report_id: str, p: dict = Depends(auth)):
+    require_admin(p)
+    d = db()
+    reports = d.get(FEEDBACK_KEY, [])
+    remaining = [item for item in reports if item.get("id") != report_id]
+    if len(remaining) == len(reports):
+        raise HTTPException(404, "Meldung nicht gefunden")
+    d[FEEDBACK_KEY] = remaining
+    save_db(d)
+    return {"ok": True}
+
+
 _schools = []
 
 
@@ -359,8 +411,10 @@ async def login(b: dict = Body(...)):
     if E.get("INVITE_CODE") and b.get("invite") != E["INVITE_CODE"]:
         raise HTTPException(403)
     school, user, pw = str(b.get("school", "")).strip(), str(b.get("username", "")).strip(), str(b.get("password", ""))
+    started = time.perf_counter()
     try:
-        await asyncio.to_thread(run, {"s": school, "n": user, "p": pw}, lambda c: None)
+        # Verify credentials and preload all dashboard data during one portal session.
+        initial_data = await asyncio.to_thread(run, {"s": school, "n": user, "p": pw}, fetch)
     except Exception as ex:
         print("LOGIN FAIL:", type(ex).__name__, ex, flush=True)
         if isinstance(ex, WrongCredentialsError):
@@ -371,6 +425,8 @@ async def login(b: dict = Body(...)):
     records = d.setdefault(PRIVACY_KEY, {})
     records[uid] = {"version": POLICY_VERSION, "accepted_at": dt.datetime.now(TZ).isoformat()}
     save_db(d)
+    cache[uid] = (time.time(), initial_data)
+    print(f"LOGIN PORTAL FETCH: {time.perf_counter() - started:.2f}s", flush=True)
     tok = F.encrypt(json.dumps({"u": uid, "s": school, "n": user, "p": pw}).encode()).decode()
     return {"token": tok}
 
