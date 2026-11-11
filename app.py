@@ -23,7 +23,7 @@ TOPIC = re.compile(r"^[A-Za-z0-9_-]{6,64}$")
 BLOG_KEY = "__blog_posts__"
 FEEDBACK_KEY = "__feedback__"
 PRIVACY_KEY = "__privacy_acceptances__"
-POLICY_VERSION = "2026-11-11-v3"
+POLICY_VERSION = "2026-11-11-v4"
 STATE_LOCK = threading.RLock()
 feedback_limits = {}
 FEEDBACK_LOCK = threading.Lock()
@@ -152,7 +152,7 @@ def fetch(c):
         return overview["html"]
 
     def tasks():
-        # Aufgaben werden aus derselben Mein-Unterricht-Seite wie Kurse und Anwesenheit gelesen.
+        # Aufgaben und Kursmappen werden aus derselben Mein-Unterricht-Seite gelesen.
         out = []
         for t in lanis_tasks.parse_tasks(meinunterricht_html()):
             description = (getattr(t, "description", "") or "").strip()
@@ -183,59 +183,6 @@ def fetch(c):
         raw = client._call(lambda: lanis_calendar.fetch_events(client.session, start, end))
         events = lanis_calendar.parse_calendar(raw, start, end).events
         return [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in events]
-
-    def attendance():
-        # Mirror Lanis Mobile's selectors: it reads #anwesend/thead tr and
-        # tbody tr from the Mein-Unterricht overview.
-        tree = HTMLParser(meinunterricht_html())
-        table = tree.css_first("#anwesend")
-        if table is None:
-            return {"available": False, "reason": "Die Tabelle #anwesend fehlt auf der Mein-Unterricht-Seite.", "courses": [], "totals": {}}
-
-        header = table.css_first("thead tr")
-        all_rows = table.css("tr")
-        if header is None and all_rows:
-            header = all_rows[0]
-        if header is None:
-            return {"available": False, "reason": "Die Anwesenheitstabelle enthält keine Spaltenüberschriften.", "courses": [], "totals": {}}
-
-        keys = [cell.text(strip=True).lower() for cell in header.css("th, td")]
-        if not keys:
-            keys = [cell.text(strip=True).lower() for cell in header.iter() if cell.tag in {"th", "td"}]
-        if not keys:
-            return {"available": False, "reason": "Die Anwesenheitsspalten konnten nicht gelesen werden.", "courses": [], "totals": {}}
-
-        rows = table.css("tbody tr")
-        if not rows:
-            rows = all_rows[1:]
-        courses = []
-        totals = {}
-        for row in rows:
-            cells = row.css("th, td")
-            if not cells:
-                continue
-            name = cells[0].text(strip=True)
-            teacher = cells[1].text(strip=True) if len(cells) > 1 else ""
-            values = {}
-            for index, key in enumerate(keys):
-                if key in {"kurs", "lehrkraft"}:
-                    continue
-                value = cells[index].text(strip=True) if index < len(cells) else "0"
-                if not value:
-                    value = "0"
-                values[key] = value
-                match = re.search(r"\d+", value)
-                if match:
-                    totals[key] = totals.get(key, 0) + int(match.group())
-            if name or values:
-                courses.append({"name": name or "Kurs", "teacher": teacher, "values": values})
-
-        return {
-            "available": bool(courses),
-            "reason": None if courses else "Die Tabelle ist vorhanden, enthält aber keine Kurszeilen.",
-            "courses": courses,
-            "totals": {key: str(value) for key, value in totals.items()},
-        }
 
     def courses():
         tree = HTMLParser(meinunterricht_html())
@@ -325,7 +272,6 @@ def fetch(c):
     return {
         "fetched": now.isoformat(),
         "tasks": part("Aufgaben", tasks, errors) or [],
-        "attendance": part("Anwesenheit", attendance, errors) or {"available": False, "courses": [], "totals": {}},
         "courses": part("Kurse", courses, errors) or [],
         "sub": part("Vertretung", sub, errors),
         "cal": part("Kalender", cal, errors) or [],
@@ -342,7 +288,6 @@ def fetch_initial(c):
     return {
         "fetched": now.isoformat(),
         "tasks": [],
-        "attendance": {"available": False, "courses": [], "totals": {}},
         "courses": [],
         "sub": None,
         "cal": [],
