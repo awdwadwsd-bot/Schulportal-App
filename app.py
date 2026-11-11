@@ -180,6 +180,54 @@ def fetch(c):
     }
 
 
+
+def fetch_initial(c):
+    """Fast first response: show the timetable while secondary portal data loads."""
+    now = dt.datetime.now(TZ).replace(tzinfo=None)
+    plan = c.get_timetable()
+    return {
+        "fetched": now.isoformat(),
+        "tasks": [],
+        "sub": None,
+        "cal": [],
+        "timetable": {
+            "class_name": plan.class_name,
+            "valid_from": plan.valid_from,
+            "entries": [pick(e, ["hour", "time", "day", "subject", "room", "teacher", "info", "duration"]) for e in plan.entries],
+        },
+        "errors": {},
+        "_partial": True,
+    }
+
+
+FETCH_LOCK = threading.Lock()
+FETCHING = set()
+
+
+def _refresh_user_data(p):
+    uid = p["u"]
+    try:
+        result = run(p, fetch)
+    except Exception as ex:
+        print("BACKGROUND DATA FETCH FAIL:", type(ex).__name__, ex, flush=True)
+        current = cache.get(uid, (0, {}))[1]
+        result = dict(current)
+        result.pop("_partial", None)
+        result["errors"] = {**result.get("errors", {}), "Schulportal": f"{type(ex).__name__}: {ex}"}
+    cache[uid] = (time.time(), result)
+    with FETCH_LOCK:
+        FETCHING.discard(uid)
+
+
+def _start_data_refresh(p):
+    uid = p["u"]
+    with FETCH_LOCK:
+        if uid in FETCHING:
+            return
+        FETCHING.add(uid)
+    threading.Thread(target=_refresh_user_data, args=(dict(p),), daemon=True).start()
+
+
 async def notify(s, msg):
     async with httpx.AsyncClient(timeout=15) as h:
         if TOPIC.match(s.get("ntfy", "")):
@@ -413,8 +461,8 @@ async def login(b: dict = Body(...)):
     school, user, pw = str(b.get("school", "")).strip(), str(b.get("username", "")).strip(), str(b.get("password", ""))
     started = time.perf_counter()
     try:
-        # Verify credentials and preload all dashboard data during one portal session.
-        initial_data = await asyncio.to_thread(run, {"s": school, "n": user, "p": pw}, fetch)
+        # Verify credentials and load the timetable first; the rest is fetched in the background.
+        initial_data = await asyncio.to_thread(run, {"s": school, "n": user, "p": pw}, fetch_initial)
     except Exception as ex:
         print("LOGIN FAIL:", type(ex).__name__, ex, flush=True)
         if isinstance(ex, WrongCredentialsError):
@@ -434,17 +482,25 @@ async def login(b: dict = Body(...)):
 @app.get("/api/data")
 async def data(refresh: bool = False, p: dict = Depends(auth)):
     t, d = cache.get(p["u"], (0, None))
-    if refresh or not d or time.time() - t > 600:
+    if d and not refresh:
+        stale = d.get("_partial") or time.time() - t > 600
+        if stale:
+            _start_data_refresh(p)
+        out = dict(d)
+        partial = out.pop("_partial", False)
+        out["refreshing"] = bool(stale or partial)
+    else:
         try:
             d = await asyncio.to_thread(run, p, fetch)
         except Exception as ex:
             raise HTTPException(502, f"Schulportal: {ex}")
         cache[p["u"]] = (time.time(), d)
-    out = dict(d)
+        out = dict(d)
+        out["refreshing"] = False
     out["profile"] = {
         "username": p["n"],
         "school_id": p["s"],
-        "class_name": (d.get("timetable") or {}).get("class_name", ""),
+        "class_name": (out.get("timetable") or {}).get("class_name", ""),
     }
     return out
 
