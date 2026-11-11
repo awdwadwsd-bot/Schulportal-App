@@ -341,7 +341,6 @@ unterricht(){
     return '<article class="card course-card"><div class="course-head"><span class="course-icon">🎓</span><div><h2>'+esc(title)+'</h2><div class="tag">'+esc(course.teacher||'Lehrkraft nicht angegeben')+(course.course_code?' · '+esc(course.course_code):'')+'</div></div></div>'+content+taskList+(!content&&!taskList?'<p class="tag course-empty">Noch keine aktuellen Stundeninhalte oder Hausaufgaben gefunden.</p>':'')+'</article>';
   }).join('');
   return '<h1>Mein Unterricht</h1><p class="sub">Kursmappen, aktuelle Stundeninhalte, Hausaufgaben und Anwesenheit.</p>'+sectionButtons+summary+(courseList.length?'<div class="course-grid">'+courseCards+'</div>':'<section class="card"><b>Kurse sind noch nicht geladen</b><p class="sub">Aktualisiere die Portal-Daten oder öffne Mein Unterricht direkt im Schulportal.</p><a class="button-link" href="https://start.schulportal.hessen.de/meinunterricht.php" target="_blank" rel="noopener">Schulportal öffnen ↗</a></section>');
-}
 },
 plan(){const automatic=(D?.timetable?.entries||[]).length>0,names={Mo:'Montag',Di:'Dienstag',Mi:'Mittwoch',Do:'Donnerstag',Fr:'Freitag'};return '<h1>Stundenplan</h1><p class="sub">'+(automatic?'Automatisch aus dem Schulportal übernommen.':'Noch kein Portalplan gefunden; eigener Plan bleibt als Ersatz verfügbar.')+' Aktive Hausaufgaben stehen direkt unter dem passenden Fach.</p><div class="week-scroll"><div class="week-view">'+DAYS.map(k=>'<section class="day-column"><h2>'+names[k]+'</h2>'+lessons(ttDay(k),k)+'</section>').join('')+'</div></div>'}, 
 ha(){
