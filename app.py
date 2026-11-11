@@ -20,7 +20,7 @@ TOPIC = re.compile(r"^[A-Za-z0-9_-]{6,64}$")
 BLOG_KEY = "__blog_posts__"
 FEEDBACK_KEY = "__feedback__"
 PRIVACY_KEY = "__privacy_acceptances__"
-POLICY_VERSION = "2026-11-11-v1"
+POLICY_VERSION = "2026-11-11-v2"
 STATE_LOCK = threading.RLock()
 feedback_limits = {}
 FEEDBACK_LOCK = threading.Lock()
@@ -162,6 +162,60 @@ def fetch(c):
         events = c.get_calendar(now - dt.timedelta(days=30), now + dt.timedelta(days=365))
         return [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in events]
 
+    def attendance():
+        # Lanis Mobile reads the student attendance table from the Mein-Unterricht
+        # overview. pylanis keeps the authenticated HTTP session on its client.
+        client = c._client
+        if client is None:
+            raise RuntimeError("Schulportal-Sitzung ist nicht initialisiert")
+        page = client.get_page("https://start.schulportal.hessen.de/meinunterricht.php").text
+        # Remove encrypted hidden fields: only the visible attendance counts are used.
+        page = re.sub(
+            r'<div\b[^>]*class="[^"]*hidden_encoded[^"]*"[^>]*>.*?</div\s*>',
+            "",
+            page,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        tree = HTMLParser(page)
+        table = tree.css_first("#anwesend")
+        if table is None:
+            return {"available": False, "courses": [], "totals": {}}
+        header = table.css_first("thead tr")
+        if header is None:
+            return {"available": False, "courses": [], "totals": {}}
+        keys = [cell.text(strip=True).lower() for cell in header.css("th, td")]
+        if not keys:
+            return {"available": False, "courses": [], "totals": {}}
+        courses = []
+        totals = {}
+        for row in table.css("tbody tr"):
+            cells = row.css("td")
+            if not cells:
+                continue
+            values = {}
+            for index, key in enumerate(keys):
+                if key in {"kurs", "lehrkraft"}:
+                    continue
+                value = cells[index].text(strip=True) if index < len(cells) else ""
+                if not value:
+                    value = "0"
+                values[key] = value
+                try:
+                    totals[key] = totals.get(key, 0) + int(value)
+                except (TypeError, ValueError):
+                    pass
+            if values:
+                courses.append({
+                    "name": cells[0].text(strip=True),
+                    "teacher": cells[1].text(strip=True) if len(cells) > 1 else "",
+                    "values": values,
+                })
+        return {
+            "available": bool(courses),
+            "courses": courses,
+            "totals": {key: str(value) for key, value in totals.items()},
+        }
+
     def courses():
         groups = c.get_learning_groups() or []
         return [
@@ -186,6 +240,7 @@ def fetch(c):
     return {
         "fetched": now.isoformat(),
         "tasks": part("Aufgaben", tasks, errors) or [],
+        "attendance": part("Anwesenheit", attendance, errors) or {"available": False, "courses": [], "totals": {}},
         "courses": part("Kurse", courses, errors) or [],
         "sub": part("Vertretung", sub, errors),
         "cal": part("Kalender", cal, errors) or [],
@@ -202,6 +257,7 @@ def fetch_initial(c):
     return {
         "fetched": now.isoformat(),
         "tasks": [],
+        "attendance": {"available": False, "courses": [], "totals": {}},
         "courses": [],
         "sub": None,
         "cal": [],
