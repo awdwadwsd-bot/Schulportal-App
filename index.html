@@ -324,7 +324,7 @@ heute(){
 },
 unterricht(){
   const courseList=D?.courses||[],homework=items().filter(h=>h.desc),attendance=D?.attendance||{},sectionButtons='<div class="unterricht-tabs">'+[['kurse','Kurse'],['abgaben','Abgaben'],['anwesenheit','Anwesenheit']].map(([id,name])=>'<button class="'+(unterrichtSection===id?'active':'')+'" data-unterricht-section="'+id+'">'+name+'</button>').join('')+'</div>';
-  const label=k=>k?String(k).replace(/_/g,' ').replace(/^\\p{L}/u,x=>x.toLocaleUpperCase('de')):'Sonstiges';
+  const label=k=>k?String(k).replace(/_/g,' ').replace(/^\p{L}/u,x=>x.toLocaleUpperCase('de')):'Sonstiges';
   if(unterrichtSection==='anwesenheit'){
     const totals=attendance.totals||{},attendanceCourses=attendance.courses||[];
     const statCards=Object.entries(totals).map(([k,v])=>'<div class="attendance-stat"><span>'+esc(label(k))+'</span><b>'+esc(v)+'</b><small>Unterrichtsstunden</small></div>').join('');
@@ -332,7 +332,7 @@ unterricht(){
     return '<h1>Mein Unterricht</h1><p class="sub">Kursmappen, Stundeninhalte und Anwesenheit aus deinem Schulportal.</p>'+sectionButtons+(attendance.available?'<h2>Gesamt</h2><div class="attendance-stats">'+statCards+'</div><h2>Nach Kurs</h2><div class="attendance-grid">'+courseCards+'</div>':'<section class="card attendance-unavailable"><span class="attendance-icon">📊</span><div><h2 style="margin:0 0 6px">Keine Anwesenheitsdaten erhalten</h2><p class="sub">'+esc(attendance.reason||'Das Schulportal hat keine Anwesenheitsübersicht geliefert.')+'</p><a class="button-link" href="https://start.schulportal.hessen.de/meinunterricht.php" target="_blank" rel="noopener">Mein Unterricht im Schulportal öffnen ↗</a></div></section>');
   }
   if(unterrichtSection==='abgaben')return '<h1>Mein Unterricht</h1><p class="sub">Hausaufgaben und Abgaben aus deinen Kursen.</p>'+sectionButtons+(homework.map(hw).join('')||'<p class="sub">Keine Aufgaben mit Hausaufgabentext gefunden.</p>');
-  const code=c=>subjectKey(String(c.course_code||c.course_name||'').trim().split(/\\s+/)[0]),matches=c=>homework.filter(h=>{const sub=subjectKey(h.subj);return sub&&(sub===subjectKey(c.course_name)||sub===code(c)||String(c.course_name||'').toLocaleLowerCase('de').includes(String(h.subj||'').toLocaleLowerCase('de')))});
+  const code=c=>subjectKey(String(c.course_code||c.course_name||'').trim().split(/\s+/)[0]),matches=c=>homework.filter(h=>{const sub=subjectKey(h.subj);return sub&&(sub===subjectKey(c.course_name)||sub===code(c)||String(c.course_name||'').toLocaleLowerCase('de').includes(String(h.subj||'').toLocaleLowerCase('de')))});
   const summary=attendance.available?'<section class="card attendance-inline"><b>📊 Anwesenheit</b><div class="attendance-inline-values">'+Object.entries(attendance.totals||{}).map(([k,v])=>'<span><small>'+esc(label(k))+'</small><strong>'+esc(v)+'</strong></span>').join('')+'</div><button class="ghost small-button" data-unterricht-section="anwesenheit">Details ansehen</button></section>':'<section class="card attendance-inline attendance-inline-empty"><b>📊 Anwesenheit</b><p class="tag">'+esc(attendance.reason||'Anwesenheitsdaten noch nicht verfügbar.')+'</p><button class="ghost small-button" data-unterricht-section="anwesenheit">Status ansehen</button></section>';
   const courseCards=courseList.map(course=>{
     const title=course.course_name||course.course_code||'Kurs',tasks=matches(course),entries=(course.entries||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,3);
