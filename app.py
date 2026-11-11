@@ -23,7 +23,10 @@ TOPIC = re.compile(r"^[A-Za-z0-9_-]{6,64}$")
 BLOG_KEY = "__blog_posts__"
 FEEDBACK_KEY = "__feedback__"
 PRIVACY_KEY = "__privacy_acceptances__"
-POLICY_VERSION = "2026-11-11-v4"
+ANALYTICS_KEY = "__admin_analytics__"
+POLICY_VERSION = "2026-11-11-v5"
+APP_STARTED = time.time()
+VISITED_TODAY = set()
 STATE_LOCK = threading.RLock()
 feedback_limits = {}
 FEEDBACK_LOCK = threading.Lock()
@@ -345,6 +348,8 @@ async def reminders():
             tom = (now.date() + dt.timedelta(days=1)).isoformat()
             sent = []
             for uid, s in db().items():
+                if str(uid).startswith('__'):
+                    continue
                 try:
                     if now.strftime("%H:%M") < s.get("remindTime", "17:00") or s.get("sent") == today:
                         continue
@@ -447,6 +452,48 @@ def public_blog():
 @app.get("/api/admin/status")
 def admin_status(p: dict = Depends(auth)):
     return {"admin": is_admin(p)}
+
+
+@app.get("/api/admin/overview")
+def admin_overview(p: dict = Depends(auth)):
+    require_admin(p)
+    now = dt.datetime.now(TZ)
+    state = db()
+    analytics = state.get(ANALYTICS_KEY, {})
+    accounts = analytics.get("accounts", {})
+    daily = analytics.get("daily", {})
+    days = []
+    for offset in range(6, -1, -1):
+        day = (now.date() - dt.timedelta(days=offset)).isoformat()
+        item = daily.get(day, {})
+        days.append({
+            "date": day,
+            "visitors": len(set(item.get("visitors", []))),
+            "logins": int(item.get("logins", 0)),
+        })
+    active_cutoff = (now.date() - dt.timedelta(days=6)).isoformat()
+    active_accounts = sum(1 for item in accounts.values() if str(item.get("last_seen", ""))[:10] >= active_cutoff)
+    cache_values = [entry[1] for entry in cache.values() if isinstance(entry, tuple) and isinstance(entry[1], dict)]
+    last_fetch = max((item.get("fetched", "") for item in cache_values), default=None)
+    failed_accounts = sum(1 for item in cache_values if item.get("errors"))
+    return {
+        "visitors": {
+            "total_accounts": len(accounts),
+            "active_accounts_7d": active_accounts,
+            "logins_total": sum(int(item.get("logins", 0)) for item in accounts.values()),
+            "logins_today": int(daily.get(now.date().isoformat(), {}).get("logins", 0)),
+            "daily": days,
+        },
+        "system": {
+            "status": "online",
+            "uptime_seconds": max(0, int(time.time() - APP_STARTED)),
+            "cached_accounts": len(cache),
+            "active_refreshes": len(FETCHING),
+            "accounts_with_data_errors": failed_accounts,
+            "last_fetch": last_fetch,
+        },
+        "privacy": "Es werden nur pseudonymisierte Konto-IDs für Statistiken verwendet; keine IP-Adressen.",
+    }
 
 
 @app.get("/api/admin/blog")
@@ -573,6 +620,22 @@ async def login(b: dict = Body(...)):
     d = db()
     records = d.setdefault(PRIVACY_KEY, {})
     records[uid] = {"version": POLICY_VERSION, "accepted_at": dt.datetime.now(TZ).isoformat()}
+    now = dt.datetime.now(TZ)
+    analytics = d.setdefault(ANALYTICS_KEY, {"accounts": {}, "daily": {}})
+    accounts = analytics.setdefault("accounts", {})
+    account = accounts.setdefault(uid, {"first_seen": now.isoformat(), "last_seen": now.isoformat(), "logins": 0})
+    account["last_seen"] = now.isoformat()
+    account["logins"] = int(account.get("logins", 0)) + 1
+    day = now.date().isoformat()
+    daily = analytics.setdefault("daily", {})
+    stats = daily.setdefault(day, {"logins": 0, "visitors": []})
+    stats["logins"] = int(stats.get("logins", 0)) + 1
+    visitors = stats.setdefault("visitors", [])
+    if uid not in visitors:
+        visitors.append(uid)
+    cutoff = (now.date() - dt.timedelta(days=90)).isoformat()
+    analytics["daily"] = {key: value for key, value in daily.items() if key >= cutoff}
+    VISITED_TODAY.add(f"{day}:{uid}")
     save_db(d)
     cache[uid] = (time.time(), initial_data)
     print(f"LOGIN PORTAL FETCH: {time.perf_counter() - started:.2f}s", flush=True)
@@ -582,6 +645,21 @@ async def login(b: dict = Body(...)):
 
 @app.get("/api/data")
 async def data(refresh: bool = False, p: dict = Depends(auth)):
+    today_key = dt.datetime.now(TZ).date().isoformat() + ":" + p["u"]
+    if today_key not in VISITED_TODAY:
+        with STATE_LOCK:
+            state = db()
+            analytics = state.setdefault(ANALYTICS_KEY, {"accounts": {}, "daily": {}})
+            daily = analytics.setdefault("daily", {})
+            day = dt.datetime.now(TZ).date().isoformat()
+            stats = daily.setdefault(day, {"logins": 0, "visitors": []})
+            visitors = stats.setdefault("visitors", [])
+            if p["u"] not in visitors:
+                visitors.append(p["u"])
+                cutoff = (dt.datetime.now(TZ).date() - dt.timedelta(days=90)).isoformat()
+                analytics["daily"] = {key: value for key, value in daily.items() if key >= cutoff}
+                save_db(state)
+            VISITED_TODAY.add(today_key)
     t, d = cache.get(p["u"], (0, None))
     if d and not refresh:
         stale = d.get("_partial") or time.time() - t > 600
