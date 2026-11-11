@@ -67,6 +67,8 @@ form{grid-template-columns:1fr}form .full{grid-column:auto}#login{margin:16px au
 @media(max-width:840px){.calendar-layout{grid-template-columns:1fr}.selected-agenda{position:static}.calendar-day{min-height:92px}}
 @media(max-width:600px){.calendar-hero{padding:21px 19px;border-radius:18px}.month-grid{gap:3px}.calendar-day{min-height:68px;padding:4px}.day-event{font-size:.56rem}.feedback-fab{right:12px;bottom:80px;padding:9px 13px}.feedback-panel{right:12px;bottom:136px}}
 
+.app-loading{width:min(100%,570px);margin:auto;padding:42px 38px;text-align:center;border:1px solid var(--line);border-radius:26px;background:linear-gradient(145deg,var(--card),color-mix(in srgb,var(--card) 86%,var(--accent-soft)));box-shadow:0 30px 90px #03071655}.loading-orbit{position:relative;width:92px;height:92px;margin:0 auto 20px;display:grid;place-items:center}.loading-orbit img{width:62px;height:62px;border-radius:18px;box-shadow:0 12px 36px #4f46e555}.loading-spinner{position:absolute;inset:0;border:3px solid var(--line);border-top-color:var(--accent);border-right-color:#f59e0b;border-radius:50%;animation:spin .9s linear infinite}.loading-kicker{font-size:.7rem;font-weight:850;letter-spacing:.18em;color:var(--accent)}.app-loading h1{font-size:clamp(1.7rem,4vw,2.3rem);margin:9px 0}.app-loading .sub{margin:0 auto;max-width:40ch}.loading-track{height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin:24px 0 18px}.loading-track span{display:block;width:38%;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),#f59e0b);animation:load-slide 1.7s ease-in-out infinite alternate}@keyframes load-slide{from{transform:translateX(-45%)}to{transform:translateX(210%)}}.loading-steps{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;color:var(--mute);font-size:.76rem}.loading-steps .step-ready{color:#1bbd88;font-weight:750}.loading-steps .step-active{color:var(--accent);font-weight:750}.app-loading .tag{display:block;margin-top:22px}@media(max-width:600px){.app-loading{padding:32px 20px;border-radius:20px}}
+body.is-loading{padding:0!important}body.is-loading main#app{max-width:none;width:100%;margin:0;padding:24px;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}body.is-loading .brandbar{width:min(100%,570px);margin:0 auto}body.is-loading nav,body.is-loading #feedback-root{display:none}
 </style>
 </head>
 <body>
@@ -142,7 +144,18 @@ function ttDay(k){
 function nextLessonDate(subject){const names={Montag:0,Dienstag:1,Mittwoch:2,Donnerstag:3,Freitag:4};const wanted=subjectKey(subject);let best=null;for(const e of D?.timetable?.entries||[]){if(subjectKey(e.subject)!==wanted)continue;const wd=names[e.day];if(wd===undefined)continue;const now=new Date(),delta=(wd-(now.getDay()+6)%7+7)%7,d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()+delta);if(delta===0){const times=String(e.time||'').match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);if(times){const start=Number(times[1])*60+Number(times[2]),end=Number(times[3])*60+Number(times[4]),lessonEnd=end+(end-start)*(Math.max(1,Number(e.duration)||1)-1);if(now.getHours()*60+now.getMinutes()>=lessonEnd)d.setDate(d.getDate()+7)}}if(!best||d<best)best=d}return best?iso(best):''}
 function groupLessons(list){const sorted=[...list].sort((a,b)=>Number.parseInt(a.h,10)-Number.parseInt(b.h,10)),out=[];for(const x of sorted){const start=Number.parseInt(x.h,10),duration=Math.max(1,Number.parseInt(x.duration,10)||1),p=out[out.length-1],same=p&&p.fach===x.fach&&p.raum===x.raum&&p.teacher===x.teacher&&start===p.endHour+1&&p.duration===1;if(same){p.endHour=start+duration-1;p.duration+=duration;p.double=p.duration>1;p.endTime=(x.time||'').split(' - ').pop()||p.endTime}else out.push({...x,startHour:start,endHour:start+duration-1,duration,double:duration>1})}return out}
 function lessonTime(x){if(!x.time)return'';const [start,end]=x.time.split(' - ');if(!x.double)return x.time;const a=start.split(':').map(Number),b=end.split(':').map(Number),minutes=(b[0]*60+b[1]-a[0]*60-a[1])*x.duration+ a[0]*60+a[1],finish=String(Math.floor(minutes/60)%24).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0');return start+' - '+finish}
-const lessons=(l,dayCode="")=>{const grouped=groupLessons(l);return grouped.length?grouped.map(x=>{const name=subjectName(x.fach),foreign=/^(ENGLISCH|SPANISCH|FRANZOESISCH|LATEIN|GRIECHISCH|ITALIENISCH|RUSSISCH|CHINESISCH)$/.test(subjectKey(name)),active=homeworkFor(name,dayCode);return '<div class="card lesson '+(x.double?'double':'')+'"'+(x.double?' style="--lesson-duration:'+x.duration+'"':'')+'><span class="mark">'+(x.double?esc(x.startHour)+'.–'+esc(x.endHour)+'. Stunde':esc(x.startHour)+'. Stunde')+'</span><div class="lesson-main"><div class="lesson-title">'+esc(name)+'</div>'+(foreign?'<div class="subject-flags"><span class="subject-flag">Fremdsprache</span></div>':'')+'<div class="lesson-meta">'+[lessonTime(x),x.teacher,x.raum?'Raum '+x.raum:''].filter(Boolean).map(esc).join(' · ')+'</div>'+(active.length?'<div class="lesson-homework"><b>📚 Aktive Hausaufgaben</b><ul style="margin:5px 0 0;padding-left:17px">'+active.map(h=>'<li>'+esc(h.title)+(h.due?' <span class="tag">· '+esc(rel(h.due).replace(/<[^>]*>/g,''))+'</span>':'')+(h.desc?'<div class="homework-preview">'+esc(h.desc)+'</div>':'')+'</li>').join('')+'</ul></div>':'')+'</div></div>'}).join(''):'<p class="sub">Kein Plan für diesen Tag hinterlegt.</p>'};
+const isForeignCourse=x=>/^(ENGLISCH|SPANISCH|FRANZOESISCH|LATEIN|GRIECHISCH|ITALIENISCH|RUSSISCH|CHINESISCH)$/.test(subjectKey(subjectName(x.fach)));
+function combineForeignLessons(list){
+ const output=[];
+ for(const x of list){
+   const match=isForeignCourse(x)?output.find(v=>v.foreignGroup&&v.startHour===x.startHour&&v.endHour===x.endHour&&v.time===x.time):null;
+   if(match){match.foreignOptions.push(x.fach);continue}
+   if(isForeignCourse(x))output.push({...x,foreignGroup:true,foreignOptions:[x.fach],fach:'Fremdsprache 2',teacher:'',raum:''});
+   else output.push(x);
+ }
+ return output;
+}
+const lessons=(l,dayCode="")=>{const grouped=combineForeignLessons(groupLessons(l));return grouped.length?grouped.map(x=>{const name=x.foreignGroup?'Fremdsprache 2':subjectName(x.fach),active=(x.foreignOptions||[x.fach]).flatMap(s=>homeworkFor(s,dayCode));return '<div class="card lesson '+(x.double?'double':'')+'"'+(x.double?' style="--lesson-duration:'+x.duration+'"':'')+'><span class="mark">'+(x.double?esc(x.startHour)+'.–'+esc(x.endHour)+'. Stunde':esc(x.startHour)+'. Stunde')+'</span><div class="lesson-main"><div class="lesson-title">'+esc(name)+'</div><div class="lesson-meta">'+[lessonTime(x),!x.foreignGroup?x.teacher:'',!x.foreignGroup&&x.raum?'Raum '+x.raum:''].filter(Boolean).map(esc).join(' · ')+'</div>'+(active.length?'<div class="lesson-homework"><b>📚 Aktive Hausaufgaben</b><ul style="margin:5px 0 0;padding-left:17px">'+active.map(h=>'<li>'+esc(h.title)+(h.due?' <span class="tag">· '+esc(rel(h.due).replace(/<[^>]*>/g,''))+'</span>':'')+(h.desc?'<div class="homework-preview">'+esc(h.desc)+'</div>':'')+'</li>').join('')+'</ul></div>':'')+'</div></div>'}).join(''):'<p class="sub">Kein Plan für diesen Tag hinterlegt.</p>'};
 const hw=h=>`<div class="card"><div class="row"><label class="${S.done.includes(h.id)?'done':''}"><input type="checkbox" style="width:auto" ${S.done.includes(h.id)?'checked':''} data-done="${h.id}"> <b>${esc(h.title)}</b></label>
 ${h.manual?`<button class="ghost" data-del="${h.id}" aria-label="Löschen">✕</button>`:''}</div>
 <div class="tag">${esc(subjectName(h.subj))||'–'} · ${rel(h.due)}</div>
@@ -214,10 +227,16 @@ benutzer(){const p=D?.profile||{},field=(label,value)=>`<div class="profile-fiel
 
 function feedbackWidget(){if(!T)return '';return `<button class="feedback-fab" type="button" data-feedback-open>✦ Feedback</button><section class="feedback-panel ${feedbackOpen?'open':''}" aria-label="Feedback und Bugreport"><div class="feedback-head"><div><b>Feedback senden</b><div class="tag">Hilf mit, MySchulportal+ besser zu machen.</div></div><button class="ghost small-button" data-feedback-close aria-label="Schließen">✕</button></div><form id="feedback-form" style="margin-top:12px"><select name="category" required><option value="bug">🐛 Fehler melden</option><option value="idee">✨ Idee vorschlagen</option><option value="sonstiges">💬 Sonstiges</option></select><textarea name="message" maxlength="3000" placeholder="Was ist passiert oder was würdest du dir wünschen?" required></textarea><p class="tag">Bitte keine Passwörter oder vertraulichen Schuldaten eintragen. Die Meldung wird zur Bearbeitung gespeichert.</p><button class="full">Meldung senden</button>${feedbackMessage?`<p class="feedback-success">${esc(feedbackMessage)}</p>`:''}</form>${isAdmin?`<div class="row" style="margin-top:14px"><b>Admin-Postfach</b><button class="ghost small-button" data-feedback-inbox>Laden ${feedbackItems.length?`· ${feedbackItems.length}`:''}</button></div><div class="feedback-inbox">${feedbackItems.map(r=>`<article class="feedback-report"><div class="row"><b>${esc(r.category)} · ${fmt(r.created)}</b><button class="ghost small-button" data-feedback-delete="${esc(r.id)}">Löschen</button></div><div class="tag">${esc(r.page||'')}</div><div>${esc(r.message)}</div></article>`).join('')||'<p class="tag">Postfach noch nicht geladen oder leer.</p>'}</div>`:''}</section>`;}
 
+function showFullScreenLoader(title,description){
+  document.body.classList.add('is-loading');$('#nav').innerHTML='';const root=$('#feedback-root');if(root)root.innerHTML='';
+  $('#app').innerHTML=brand+`<section class="app-loading" role="status" aria-live="polite"><div class="loading-orbit"><img src="/icon.svg" alt=""><span class="loading-spinner"></span></div><div class="loading-kicker">MYSCHULPORTAL+</div><h1>${esc(title)}</h1><p class="sub">${esc(description)}</p><div class="loading-track"><span></span></div><div class="loading-steps"><span class="step-ready">✓ Verbindung</span><span class="step-active">◌ Stundenplan &amp; Daten</span><span>○ Ansicht vorbereiten</span></div><p class="tag">Das Schulportal braucht manchmal einen Moment. Bitte lass diese Seite offen.</p></section>`;
+}
 function render(){
+  if(T&&(!D||D.refreshing)&&!err){showFullScreenLoader(D?.refreshing?'Stundenplan ist da':'Schulportal wird verbunden',D?.refreshing?'Aufgaben, Kalender und weitere Inhalte werden noch geladen.':'Wir melden dich an und laden deine aktuellen Schuldaten.');return}
+  document.body.classList.remove('is-loading');
   $('#nav').innerHTML=TABS.map(([k,i,l])=>`<button class="${k==tab?'on':''}" data-tab="${k}"><span>${i}</span>${l}</button>`).join('');
   const errors=Object.entries(D?.errors||{});const noSub=errors.some(([k,v])=>k==='Vertretung'&&String(v).includes('response: -1'));const ER=errors.filter(([k])=>!(noSub&&k==='Vertretung')).map(([k,v])=>`${k}: ${v}`).join(' · ');
-  $('#app').innerHTML=brand+`<div class="app-top"><button id="themeToggle" class="theme-toggle" aria-label="Darstellung wechseln">${theme==='dark'?'☀️ Hell':'🌙 Dunkel'}</button></div>`+(D?.refreshing?'<div class="load-progress"><span class="load-spinner"></span><span>Stundenplan ist da · Aufgaben und Kalender werden geladen …</span></div>':'')+(err?`<p class="err">⚠️ ${esc(err)}</p>`:'')+(noSub?'<div class="notice"><span class="notice-icon">ℹ️</span><div><b>Kein Vertretungsplan verfügbar</b><br>Deine Schule stellt über das Schulportal aktuell keine Vertretungsdaten bereit.</div></div>':'')+(ER?`<p class="err">⚠️ Nicht geladen – ${esc(ER)}</p>`:'')+views[tab]();
+  $('#app').innerHTML=brand+`<div class="app-top"><button id="themeToggle" class="theme-toggle" aria-label="Darstellung wechseln">${theme==='dark'?'☀️ Hell':'🌙 Dunkel'}</button></div>`+(err?`<p class="err">⚠️ ${esc(err)}</p>`:'')+(noSub?'<div class="notice"><span class="notice-icon">ℹ️</span><div><b>Kein Vertretungsplan verfügbar</b><br>Deine Schule stellt über das Schulportal aktuell keine Vertretungsdaten bereit.</div></div>':'')+(ER?`<p class="err">⚠️ Nicht geladen – ${esc(ER)}</p>`:'')+views[tab]();
   const feedbackRoot=$('#feedback-root');if(feedbackRoot)feedbackRoot.innerHTML=feedbackWidget();
 }
 document.addEventListener('click',async e=>{
@@ -284,6 +303,7 @@ document.addEventListener('submit',async e=>{
     if(!f.school){err='Bitte deine Schule aus der Liste wählen';return loginView()}
     try{
       const submitButton=e.target.querySelector('button[type=submit]');if(submitButton){submitButton.disabled=true;submitButton.textContent='Stundenplan wird geladen …'}
+      showFullScreenLoader('Schulportal wird verbunden','Deine Anmeldung wird geprüft und der Stundenplan vorbereitet.');
       const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(f)});
       if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(r.status==403?'Einladungscode falsch':(j.detail||'Anmeldung fehlgeschlagen'))}
       T=(await r.json()).token;localStorage.setItem('t',T);return init();
@@ -305,11 +325,11 @@ document.addEventListener('input',e=>{
   }catch(x){}},300);
 });
 function privacyGateView(){
-  $('#nav').innerHTML='';
+  document.body.classList.remove('is-loading');$('#nav').innerHTML='';
   $('#app').innerHTML=brand+'<h1>Datenschutz bestätigen</h1><p class="sub">Bitte lies die Datenschutzerklärung, bevor du die App weiter verwendest.</p><section class="card"><p>Die App verarbeitet deine Schulportal-Anmeldedaten, daraus geladene Unterrichtsdaten sowie deine eigenen Aufgaben und Noten, damit sie die Funktionen bereitstellen kann.</p><p><a href="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung vollständig lesen ↗</a></p><label class="privacy-check"><input type="checkbox" id="privacy-gate-check"> <span>Ich habe die Datenschutzerklärung gelesen und akzeptiere sie.</span></label><button type="button" data-privacy-accept style="margin-top:14px">Akzeptieren und fortfahren</button></section>';
 }
 function loginView(){
-  $('#nav').innerHTML='';
+  document.body.classList.remove('is-loading');$('#nav').innerHTML='';
   $('#app').innerHTML=brand+`<h1>Willkommen</h1><p class="sub">Dein Stundenplan, Aufgaben und Termine – zusammen an einem Ort.</p>${err?`<p class="err">⚠️ ${esc(err)}</p>`:''}
   <form id="login" class="card"><input class="full" name="sq" id="sq" placeholder="Schule suchen (Name, Ort oder Nummer)" autocomplete="off" required><input type="hidden" name="school" id="sid"><div id="sres" class="full"></div>
   <input class="full" name="username" placeholder="vorname.nachname" autocomplete="username" required>
@@ -335,7 +355,7 @@ async function load(refresh,poll=0){
 async function init(){
   if(!T)return loginView();
   try{const r=await fetch('/api/privacy/status',{headers:{'X-Token':T}});if(r.status===401){localStorage.removeItem('t');T='';return loginView()}if(!r.ok)throw new Error('Datenschutzstatus konnte nicht geladen werden');const consent=await r.json();if(!consent.accepted)return privacyGateView()}catch(x){err=x.message;return loginView()}
-  render();
+  showFullScreenLoader('Dein Stundenplan wird vorbereitet','Deine Aufgaben und Termine werden mit deinem Portalzugang abgeglichen.');
   try{const s=await api('state');if(s.updated>S.updated){S=s;S.grades ||= {};localStorage.setItem('S',JSON.stringify(S))}else if(S.updated>s.updated)save()}catch(x){err=x.message}
   let migratedTasks=false;S.manual ||= [];for(const h of S.manual){if(!h.assigned){h.assigned=h.created||today();migratedTasks=true}}if(migratedTasks)save();
   if(migrateGradeWeights())save();
