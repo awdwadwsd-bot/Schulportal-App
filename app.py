@@ -8,7 +8,10 @@ from fastapi import FastAPI, Header, HTTPException, Body, Depends
 from fastapi.responses import FileResponse
 from pylanis import Lanis
 from pylanis.lanisapi import substitution as lanis_substitution
+from pylanis.lanisapi import calendar as lanis_calendar
+from pylanis.lanisapi import tasks as lanis_tasks
 from pylanis.lanisapi.exceptions import WrongCredentialsError
+from selectolax.lexbor import LexborHTMLParser as HTMLParser
 
 E = os.environ
 TZ = ZoneInfo("Europe/Berlin")
@@ -138,10 +141,13 @@ def fetch(c):
     errors = {}
 
     def tasks():
+        client = c._client
+        if client is None:
+            raise RuntimeError("Schulportal-Sitzung ist nicht initialisiert")
+        html = client._call(lambda active: lanis_tasks.fetch_page(active.session))
         out = []
-        for t in c.get_tasks() or []:
-            # "Mein Unterricht" enthält auch reine Unterrichtseinträge. Nur
-            # Einträge mit dem Portal-Feld realHomework sind Hausaufgaben.
+        for t in lanis_tasks.parse_tasks(html):
+            # Nur Einträge mit echtem Portal-Hausaufgabentext übernehmen.
             description = (getattr(t, "description", "") or "").strip()
             if not description:
                 continue
@@ -159,7 +165,16 @@ def fetch(c):
         }
 
     def cal():
-        events = c.get_calendar(now - dt.timedelta(days=30), now + dt.timedelta(days=365))
+        # Fetch the calendar directly through the authenticated session.
+        # The pylanis convenience method re-checks the apps dashboard; that
+        # dashboard sometimes returns an invalid response while the calendar
+        # endpoint itself is healthy.
+        client = c._client
+        if client is None:
+            raise RuntimeError("Schulportal-Sitzung ist nicht initialisiert")
+        start, end = now - dt.timedelta(days=30), now + dt.timedelta(days=365)
+        raw = client._call(lambda active: lanis_calendar.fetch_events(active.session, start, end))
+        events = lanis_calendar.parse_calendar(raw, start, end).events
         return [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in events]
 
     def attendance():
