@@ -505,7 +505,7 @@ document.addEventListener('input',e=>{
 });
 function privacyGateView(){
   document.body.classList.remove('is-loading');$('#nav').innerHTML='';
-  $('#app').innerHTML=brand+'<h1>Datenschutz bestätigen</h1><p class="sub">Bitte lies die Datenschutzerklärung, bevor du die App weiter verwendest.</p><section class="card"><p>Die App verarbeitet deine Schulportal-Anmeldedaten, Unterrichts- und Anwesenheitsdaten sowie deine eigenen Aufgaben und Noten, damit sie die Funktionen bereitstellen kann.</p><p><a href="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung vollständig lesen ↗</a></p><label class="privacy-check"><input type="checkbox" id="privacy-gate-check"> <span>Ich habe die Datenschutzerklärung gelesen und akzeptiere sie.</span></label><button type="button" data-privacy-accept style="margin-top:14px">Akzeptieren und fortfahren</button></section>';
+  $('#app').innerHTML=brand+'<h1>Datenschutz bestätigen</h1><p class="sub">Bitte lies die Datenschutzerklärung, bevor du die App weiter verwendest.</p><section class="card"><p>Die App verarbeitet deine Schulportal-Anmeldedaten sowie Unterrichtsinhalte, Aufgaben und deine eigenen Noten, damit sie die Funktionen bereitstellen kann.</p><p><a href="/datenschutz" target="_blank" rel="noopener">Datenschutzerklärung vollständig lesen ↗</a></p><label class="privacy-check"><input type="checkbox" id="privacy-gate-check"> <span>Ich habe die Datenschutzerklärung gelesen und akzeptiere sie.</span></label><button type="button" data-privacy-accept style="margin-top:14px">Akzeptieren und fortfahren</button></section>';
 }
 function loginView(){
   document.body.classList.remove('is-loading');$('#nav').innerHTML='';
