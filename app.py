@@ -185,19 +185,31 @@ def fetch(c):
         return [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in events]
 
     def attendance():
+        # Mirror Lanis Mobile's selectors: it reads #anwesend/thead tr and
+        # tbody tr from the Mein-Unterricht overview.
         tree = HTMLParser(meinunterricht_html())
         table = tree.css_first("#anwesend")
         if table is None:
-            return {"available": False, "reason": "Die Anwesenheitstabelle fehlt auf der geladenen Mein-Unterricht-Seite.", "courses": [], "totals": {}}
-        header = table.css_first("thead > tr")
+            return {"available": False, "reason": "Die Tabelle #anwesend fehlt auf der Mein-Unterricht-Seite.", "courses": [], "totals": {}}
+
+        header = table.css_first("thead tr")
+        all_rows = table.css("tr")
+        if header is None and all_rows:
+            header = all_rows[0]
         if header is None:
             return {"available": False, "reason": "Die Anwesenheitstabelle enthält keine Spaltenüberschriften.", "courses": [], "totals": {}}
+
         keys = [cell.text(strip=True).lower() for cell in header.css("th, td")]
         if not keys:
+            keys = [cell.text(strip=True).lower() for cell in header.iter() if cell.tag in {"th", "td"}]
+        if not keys:
             return {"available": False, "reason": "Die Anwesenheitsspalten konnten nicht gelesen werden.", "courses": [], "totals": {}}
+
+        rows = table.css("tbody tr")
+        if not rows:
+            rows = all_rows[1:]
         courses = []
         totals = {}
-        rows = table.css("tbody > tr")
         for row in rows:
             cells = row.css("th, td")
             if not cells:
@@ -217,6 +229,7 @@ def fetch(c):
                     totals[key] = totals.get(key, 0) + int(match.group())
             if name or values:
                 courses.append({"name": name or "Kurs", "teacher": teacher, "values": values})
+
         return {
             "available": bool(courses),
             "reason": None if courses else "Die Tabelle ist vorhanden, enthält aber keine Kurszeilen.",
