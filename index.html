@@ -89,6 +89,47 @@ body.is-loading{padding:0!important}body.is-loading main#app{max-width:none;widt
 .day-event-time{font-weight:800;color:var(--accent)}.day-event-title{font-weight:800;color:var(--ink);font-size:1.08rem}.day-event-location{font-size:.85rem;color:var(--mute);margin-top:6px}.day-event-description{white-space:pre-wrap;line-height:1.6;margin-top:10px;color:var(--soft-text)}
 @media(max-width:600px){.day-modal-backdrop{padding:10px}.day-modal{padding:18px 15px;border-radius:18px}.day-event-detail{grid-template-columns:1fr;gap:6px;padding:14px 2px}.day-modal-head{top:-18px}}
 
+
+/* Mein Unterricht */
+.unterricht-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+.unterricht-tabs button{background:var(--card);color:var(--mute);border-color:var(--line);border-radius:999px;padding:9px 16px}
+.unterricht-tabs button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.course-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.course-card{margin:0;min-height:180px;padding:19px}
+.course-head{display:flex;align-items:center;gap:12px}
+.course-head h2{margin:0 0 4px}
+.course-icon,.attendance-icon{display:grid;place-items:center;flex:none;width:46px;height:46px;border-radius:14px;background:var(--accent-soft);color:var(--accent);font-size:1.25rem}
+.course-semester{margin:12px 0}
+.course-homework{margin-top:15px;padding:12px;border:1px solid #16a7797a;background:color-mix(in srgb,#16a779 7%,var(--card));border-radius:12px;line-height:1.5}
+.course-homework>b{color:#11a57b;font-size:.83rem}
+.course-task{padding-top:10px;margin-top:9px;border-top:1px solid var(--line)}
+.course-empty{display:block;margin-top:22px}
+.attendance-unavailable{display:flex;align-items:flex-start;gap:16px;padding:22px}
+.button-link{display:inline-flex;text-decoration:none;align-items:center;padding:10px 14px;background:var(--accent);color:white;border-radius:10px;font-weight:700}
+/* Kalender Monatsraster mit mehrtägigen Balken */
+.calendar-grid-shell{overflow-x:auto;border:1px solid var(--line);border-radius:18px;background:var(--card);padding:10px;box-shadow:0 14px 38px #17284a10}
+.calendar-weekdays,.calendar-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));column-gap:3px;min-width:700px}
+.calendar-weekdays{padding-bottom:8px}
+.calendar-weekdays>div{text-align:center;padding:8px 4px;color:var(--mute);font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.calendar-week{grid-template-rows:32px repeat(var(--lanes),minmax(23px,auto));gap:4px 3px;padding:4px 0 8px;border-top:1px solid var(--line)}
+.calendar-day-cell{grid-row:1;position:relative;display:flex;align-items:center;justify-content:space-between;min-width:0;padding:5px 8px;border:0;border-radius:7px;background:transparent;color:var(--text);text-align:left;font-size:.78rem;font-weight:700}
+.calendar-day-cell:hover{background:var(--accent-soft)}
+.calendar-day-cell.outside{opacity:.38}
+.calendar-day-cell.weekend{background:color-mix(in srgb,var(--paper) 44%,transparent)}
+.calendar-day-cell.selected{outline:1px solid var(--accent);background:var(--accent-soft);color:var(--accent)}
+.calendar-day-cell.today>span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:white}
+.calendar-day-cell i{font-size:.62rem;color:var(--mute);font-style:normal}
+.calendar-span{align-self:center;z-index:1;min-width:0;height:22px;overflow:hidden;padding:3px 8px;border:0;border-left:3px solid #59c7b2;border-radius:6px;background:#59c7b228;color:var(--text);text-align:left;text-overflow:ellipsis;white-space:nowrap;font-size:.66rem;font-weight:700}
+.calendar-span:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.calendar-span.work{border-left-color:#ff718d;background:#ff718d24;color:var(--red)}
+.calendar-span.continues-left{border-top-left-radius:0;border-bottom-left-radius:0}
+.calendar-span.continues-right{border-top-right-radius:0;border-bottom-right-radius:0}
+.calendar-toolbar .calendar-actions input{width:min(210px,45vw)}
+.selected-agenda{margin-top:14px}
+.selected-agenda .day-event-detail{padding:10px 0;border-top:1px solid var(--line)}
+.day-event-title{font-weight:750;color:var(--ink)}
+.day-event-time,.day-event-description{margin-top:4px;color:var(--mute);font-size:.82rem;line-height:1.45}
+@media(max-width:700px){.calendar-grid-shell{padding:6px}.attendance-unavailable{display:block}.attendance-icon{margin-bottom:12px}.course-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
