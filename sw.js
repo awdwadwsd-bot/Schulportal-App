@@ -1,4 +1,4 @@
-const CACHE_NAME = "myschulportal-plus-shell-v4";
+const CACHE_NAME = "myschulportal-plus-shell-v5";
 const SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/my-schulportal-plus-logo.svg"];
 
 self.addEventListener("install", event => {
