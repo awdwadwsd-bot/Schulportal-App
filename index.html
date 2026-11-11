@@ -228,7 +228,8 @@ const brand='<div class="brandbar"><img src="/icon.svg" alt=""><span>MySchulport
 const TABS=[['heute','🏠','Heute'],['plan','📅','Plan'],['unterricht','📚','Mein Unterricht'],['ha','📚','Aufgaben'],['arbeiten','📝','Arbeiten'],['noten','🎓','Meine Noten'],['vertretung','🔄','Vertretung'],['kal','🗓️','Kalender'],['einstellungen','⚙️','Einstellungen'],['about','✍️','Über Lukas'],['benutzer','👤','Benutzer'],['admin','🛠️','Admin']];
 let T=localStorage.getItem('t'),tab='heute',D=null,err='',subDate='',subData=null,subLoading=false,subError='';
 let calendarMonth=null,calendarSelected='',calendarFilter='all',calendarSearch='',calendarDayOpen=false,unterrichtSection='kurse',blogPosts=[],isAdmin=false,blogEditId='';
-let feedbackOpen=false,feedbackMessage='',feedbackItems=[];\nlet adminSection='overview',adminOverview=null,adminConsoleOutput='',adminError='';
+let feedbackOpen=false,feedbackMessage='',feedbackItems=[];
+let adminSection='overview',adminOverview=null,adminConsoleOutput='',adminError='';
 let S=JSON.parse(localStorage.getItem('S')||'null')||{updated:1,manual:[],due:{},done:[],grades:{},remindTime:'17:00',tt:'',ntfy:'hw-'+Math.random().toString(36).slice(2,14),discord:''};S.grades ||= {};
 let theme=localStorage.getItem('theme')||'dark';document.documentElement.dataset.theme=theme;
 
