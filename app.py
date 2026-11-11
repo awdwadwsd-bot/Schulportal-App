@@ -232,6 +232,49 @@ def fetch(c):
         }
 
     def courses():
+        # Die Kursübersicht "Mein Unterricht" liefert echte Kursmappen.
+        # get_learning_groups() ist in manchen pylanis/Schulportal-Versionen
+        # leer, obwohl die Mappen auf meinunterricht.php vorhanden sind.
+        client = c._client
+        if client is None:
+            raise RuntimeError("Schulportal-Sitzung ist nicht initialisiert")
+        page = client.get_page(
+            "https://start.schulportal.hessen.de/meinunterricht.php?cacheBreaker="
+            + str(int(time.time() * 1000))
+        ).text
+        tree = HTMLParser(page)
+        mappen = tree.css_first("#mappen")
+        row = mappen.css_first(".row") if mappen else None
+        found = []
+        if row is not None:
+            for mappe in row.iter():
+                # .row selbst überspringen: nur deren direkte Kurskarten zählen.
+                if mappe.parent is not row:
+                    continue
+                link = mappe.css_first("a.btn.btn-primary")
+                heading = mappe.css_first("h2")
+                if link is None or heading is None:
+                    continue
+                href = link.attributes.get("href", "")
+                match = re.search(r"[?&]id=([^&#]+)", href)
+                course_id = match.group(1) if match else href
+                teachers = []
+                for button in mappe.css("div.btn-group > button"):
+                    title = (button.attributes.get("title", "") or "").split(" (")[0].strip()
+                    short = button.text(strip=True)
+                    teacher = title or short
+                    if teacher and teacher not in teachers:
+                        teachers.append(teacher)
+                found.append({
+                    "id": course_id,
+                    "semester": None,
+                    "course_name": heading.text(strip=True),
+                    "course_code": "",
+                    "teacher": ", ".join(teachers),
+                })
+        if found:
+            return found
+        # Keep older portal layouts supported if the mappen section is absent.
         groups = c.get_learning_groups() or []
         return [
             {
