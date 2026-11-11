@@ -1,5 +1,5 @@
-const CACHE_NAME = "schulportal-shell-v2";
-const SHELL = ["/", "/manifest.webmanifest", "/icon.svg"];
+const CACHE_NAME = "myschulportal-plus-shell-v3";
+const SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/my-schulportal-plus-logo.svg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL)));
