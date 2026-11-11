@@ -23,7 +23,7 @@ TOPIC = re.compile(r"^[A-Za-z0-9_-]{6,64}$")
 BLOG_KEY = "__blog_posts__"
 FEEDBACK_KEY = "__feedback__"
 PRIVACY_KEY = "__privacy_acceptances__"
-POLICY_VERSION = "2026-11-11-v2"
+POLICY_VERSION = "2026-11-11-v3"
 STATE_LOCK = threading.RLock()
 feedback_limits = {}
 FEEDBACK_LOCK = threading.Lock()
@@ -119,8 +119,8 @@ def run(p, fn):
     with LOCK:
         c = Lanis(school_id=p["s"], username=p["n"], password=p["p"])
         try:
-            # Der SDK-Client meldet sich beim ersten Portalaufruf an.
-            c.get_available_apps()
+            # Der erste benötigte Datenabruf authentifiziert den Client bereits.
+            # Eine separate Apps-Dashboard-Abfrage ist unnötig und verzögert den Login.
             return fn(c)
         finally:
             c.reset()
@@ -139,15 +139,21 @@ def part(name, fn, errors):
 def fetch(c):
     now = dt.datetime.now(TZ).replace(tzinfo=None)
     errors = {}
+    overview = {"html": None}
+
+    def meinunterricht_html():
+        if overview["html"] is None:
+            client = c._client
+            if client is None:
+                raise RuntimeError("Schulportal-Sitzung ist nicht initialisiert")
+            url = "https://start.schulportal.hessen.de/meinunterricht.php?cacheBreaker=" + str(int(time.time() * 1000))
+            overview["html"] = client.get_page(url).text
+        return overview["html"]
 
     def tasks():
-        client = c._client
-        if client is None:
-            raise RuntimeError("Schulportal-Sitzung ist nicht initialisiert")
-        html = client._call(lambda: lanis_tasks.fetch_page(client.session))
+        # Aufgaben werden aus derselben Mein-Unterricht-Seite wie Kurse und Anwesenheit gelesen.
         out = []
-        for t in lanis_tasks.parse_tasks(html):
-            # Nur Einträge mit echtem Portal-Hausaufgabentext übernehmen.
+        for t in lanis_tasks.parse_tasks(meinunterricht_html()):
             description = (getattr(t, "description", "") or "").strip()
             if not description:
                 continue
@@ -178,74 +184,51 @@ def fetch(c):
         return [pick(e, ["title", "description", "place", "start", "end", "whole_day"]) for e in events]
 
     def attendance():
-        # Lanis Mobile reads the student attendance table from the Mein-Unterricht
-        # overview. pylanis keeps the authenticated HTTP session on its client.
-        client = c._client
-        if client is None:
-            raise RuntimeError("Schulportal-Sitzung ist nicht initialisiert")
-        page = client.get_page("https://start.schulportal.hessen.de/meinunterricht.php").text
-        # Remove encrypted hidden fields: only the visible attendance counts are used.
-        page = re.sub(
-            r'<div\b[^>]*class="[^"]*hidden_encoded[^"]*"[^>]*>.*?</div\s*>',
-            "",
-            page,
-            flags=re.IGNORECASE | re.DOTALL,
-        )
-        tree = HTMLParser(page)
+        tree = HTMLParser(meinunterricht_html())
         table = tree.css_first("#anwesend")
         if table is None:
-            return {"available": False, "courses": [], "totals": {}}
-        header = table.css_first("thead tr")
+            return {"available": False, "reason": "Die Anwesenheitstabelle fehlt auf der geladenen Mein-Unterricht-Seite.", "courses": [], "totals": {}}
+        header = table.css_first("thead > tr")
         if header is None:
-            return {"available": False, "courses": [], "totals": {}}
+            return {"available": False, "reason": "Die Anwesenheitstabelle enthält keine Spaltenüberschriften.", "courses": [], "totals": {}}
         keys = [cell.text(strip=True).lower() for cell in header.css("th, td")]
         if not keys:
-            return {"available": False, "courses": [], "totals": {}}
+            return {"available": False, "reason": "Die Anwesenheitsspalten konnten nicht gelesen werden.", "courses": [], "totals": {}}
         courses = []
         totals = {}
-        for row in table.css("tbody tr"):
-            cells = row.css("td")
+        rows = table.css("tbody > tr")
+        for row in rows:
+            cells = row.css("th, td")
             if not cells:
                 continue
+            name = cells[0].text(strip=True)
+            teacher = cells[1].text(strip=True) if len(cells) > 1 else ""
             values = {}
             for index, key in enumerate(keys):
                 if key in {"kurs", "lehrkraft"}:
                     continue
-                value = cells[index].text(strip=True) if index < len(cells) else ""
+                value = cells[index].text(strip=True) if index < len(cells) else "0"
                 if not value:
                     value = "0"
                 values[key] = value
-                try:
-                    totals[key] = totals.get(key, 0) + int(value)
-                except (TypeError, ValueError):
-                    pass
-            if values:
-                courses.append({
-                    "name": cells[0].text(strip=True),
-                    "teacher": cells[1].text(strip=True) if len(cells) > 1 else "",
-                    "values": values,
-                })
+                match = re.search(r"\d+", value)
+                if match:
+                    totals[key] = totals.get(key, 0) + int(match.group())
+            if name or values:
+                courses.append({"name": name or "Kurs", "teacher": teacher, "values": values})
         return {
             "available": bool(courses),
+            "reason": None if courses else "Die Tabelle ist vorhanden, enthält aber keine Kurszeilen.",
             "courses": courses,
             "totals": {key: str(value) for key, value in totals.items()},
         }
 
     def courses():
-        # Die Kursübersicht "Mein Unterricht" liefert echte Kursmappen.
-        # get_learning_groups() ist in manchen pylanis/Schulportal-Versionen
-        # leer, obwohl die Mappen auf meinunterricht.php vorhanden sind.
-        client = c._client
-        if client is None:
-            raise RuntimeError("Schulportal-Sitzung ist nicht initialisiert")
-        page = client.get_page(
-            "https://start.schulportal.hessen.de/meinunterricht.php?cacheBreaker="
-            + str(int(time.time() * 1000))
-        ).text
-        tree = HTMLParser(page)
+        tree = HTMLParser(meinunterricht_html())
         mappen = tree.css_first("#mappen")
         row = mappen.css_first(".row") if mappen else None
         found = []
+        by_url = {}
         if row is not None:
             for mappe in tree.css("#mappen .row > div"):
                 link = mappe.css_first("a.btn.btn-primary")
@@ -262,16 +245,48 @@ def fetch(c):
                     teacher = title or short
                     if teacher and teacher not in teachers:
                         teachers.append(teacher)
-                found.append({
+                course = {
                     "id": course_id,
                     "semester": None,
                     "course_name": heading.text(strip=True),
                     "course_code": "",
                     "teacher": ", ".join(teachers),
+                    "entries": [],
+                }
+                found.append(course)
+                by_url[href] = course
+
+        for entry in tree.css("#aktuellTable tr.printable"):
+            date_node = entry.css_first(".datum")
+            if date_node is None:
+                continue
+            course_link = entry.css_first("td > h3 > a")
+            if course_link is None:
+                continue
+            course = by_url.get(course_link.attributes.get("href", ""))
+            if course is None:
+                continue
+            date_text = date_node.text(strip=True)
+            try:
+                date = dt.datetime.strptime(date_text, "%d.%m.%Y").date().isoformat()
+            except (TypeError, ValueError):
+                date = date_text
+            topic_node = entry.css_first(".thema")
+            content_node = entry.css_first(".inhalt span.markup") or entry.css_first(".inhalt .markup")
+            homework_node = entry.css_first(".homework .realHomework")
+            topic = topic_node.text(strip=True) if topic_node else ""
+            content = content_node.text(strip=True) if content_node else ""
+            homework_text = homework_node.text(strip=True) if homework_node else ""
+            if topic or content or homework_text:
+                course["entries"].append({
+                    "date": date,
+                    "topic": topic,
+                    "content": content,
+                    "homework": homework_text,
                 })
+
         if found:
             return found
-        # Keep older portal layouts supported if the mappen section is absent.
         groups = c.get_learning_groups() or []
         return [
             {
@@ -280,6 +295,7 @@ def fetch(c):
                 "course_name": getattr(group, "course_name", "") or "",
                 "course_code": getattr(group, "course_code", "") or "",
                 "teacher": getattr(group, "teacher", "") or "",
+                "entries": [],
             }
             for group in groups
         ]
