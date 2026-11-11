@@ -119,8 +119,9 @@ def run(p, fn):
     with LOCK:
         c = Lanis(school_id=p["s"], username=p["n"], password=p["p"])
         try:
-            # Der erste benötigte Datenabruf authentifiziert den Client bereits.
-            # Eine separate Apps-Dashboard-Abfrage ist unnötig und verzögert den Login.
+            # Initialisiere die angemeldete Sitzung genau einmal. Der Apps-Dashboard-Aufruf
+            # ist unnötig langsam und für die folgenden Abrufe nicht erforderlich.
+            c._ensure_client()
             return fn(c)
         finally:
             c.reset()
