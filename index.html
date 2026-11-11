@@ -186,6 +186,13 @@ body.is-loading{padding:0!important}body.is-loading main#app{max-width:none;widt
 
 .lesson-content .row strong{font-size:.94rem;font-weight:700;line-height:1.4}
 .lesson-content .row .tag{white-space:nowrap}
+
+#mobileFeedbackToggle{display:none}
+@media(max-width:899px){
+ #mobileFeedbackToggle{display:inline-flex;align-items:center;white-space:nowrap}
+ .feedback-fab{display:none}
+ .feedback-panel{right:12px;bottom:12px;max-height:calc(100dvh - 24px)}
+}
 </style>
 </head>
 <body>
@@ -397,7 +404,7 @@ function render(){
   document.body.classList.remove('is-loading');
   $('#nav').innerHTML=TABS.map(([k,i,l])=>`<button class="${k==tab?'on':''}" data-tab="${k}"><span>${i}</span>${l}</button>`).join('');
   const errors=Object.entries(D?.errors||{});const noSub=errors.some(([k,v])=>k==='Vertretung'&&String(v).includes('response: -1'));const ER=errors.filter(([k])=>!(noSub&&k==='Vertretung')).map(([k,v])=>`${k}: ${v}`).join(' · ');
-  $('#app').innerHTML=brand+`<div class="app-top"><button id="mobileMenuToggle" aria-expanded="false" aria-controls="nav"><span class="menu-icon">☰</span><span>Menü</span></button><button id="themeToggle" class="theme-toggle" aria-label="Darstellung wechseln">${theme==='dark'?'☀️ Hell':'🌙 Dunkel'}</button></div>`+(err?`<p class="err">⚠️ ${esc(err)}</p>`:'')+(noSub?'<div class="notice"><span class="notice-icon">ℹ️</span><div><b>Kein Vertretungsplan verfügbar</b><br>Deine Schule stellt über das Schulportal aktuell keine Vertretungsdaten bereit.</div></div>':'')+(ER?`<p class="err">⚠️ Nicht geladen – ${esc(ER)}</p>`:'')+views[tab]();
+  $('#app').innerHTML=brand+`<div class="app-top"><button id="mobileMenuToggle" aria-expanded="false" aria-controls="nav"><span class="menu-icon">☰</span><span>Menü</span></button><button id="mobileFeedbackToggle" class="ghost small-button" data-feedback-open>✦ Feedback</button><button id="themeToggle" class="theme-toggle" aria-label="Darstellung wechseln">${theme==='dark'?'☀️ Hell':'🌙 Dunkel'}</button></div>`+(err?`<p class="err">⚠️ ${esc(err)}</p>`:'')+(noSub?'<div class="notice"><span class="notice-icon">ℹ️</span><div><b>Kein Vertretungsplan verfügbar</b><br>Deine Schule stellt über das Schulportal aktuell keine Vertretungsdaten bereit.</div></div>':'')+(ER?`<p class="err">⚠️ Nicht geladen – ${esc(ER)}</p>`:'')+views[tab]();
   const feedbackRoot=$('#feedback-root');if(feedbackRoot)feedbackRoot.innerHTML=feedbackWidget();
 }
 document.addEventListener('click',async e=>{
