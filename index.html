@@ -287,13 +287,13 @@ function ttDay(k){
 function nextLessonDate(subject){const names={Montag:0,Dienstag:1,Mittwoch:2,Donnerstag:3,Freitag:4};const wanted=subjectKey(subject);let best=null;for(const e of D?.timetable?.entries||[]){if(subjectKey(e.subject)!==wanted)continue;const wd=names[e.day];if(wd===undefined)continue;const now=new Date(),delta=(wd-(now.getDay()+6)%7+7)%7,d=new Date(now);d.setHours(0,0,0,0);d.setDate(d.getDate()+delta);if(delta===0){const times=String(e.time||'').match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);if(times){const start=Number(times[1])*60+Number(times[2]),end=Number(times[3])*60+Number(times[4]),lessonEnd=end+(end-start)*(Math.max(1,Number(e.duration)||1)-1);if(now.getHours()*60+now.getMinutes()>=lessonEnd)d.setDate(d.getDate()+7)}}if(!best||d<best)best=d}return best?iso(best):''}
 function groupLessons(list){const sorted=[...list].sort((a,b)=>Number.parseInt(a.h,10)-Number.parseInt(b.h,10)),out=[];for(const x of sorted){const start=Number.parseInt(x.h,10),duration=Math.max(1,Number.parseInt(x.duration,10)||1),p=out[out.length-1],same=p&&p.fach===x.fach&&p.raum===x.raum&&p.teacher===x.teacher&&start===p.endHour+1&&p.duration===1;if(same){p.endHour=start+duration-1;p.duration+=duration;p.double=p.duration>1;p.endTime=(x.time||'').split(' - ').pop()||p.endTime}else out.push({...x,startHour:start,endHour:start+duration-1,duration,double:duration>1})}return out}
 function lessonTime(x){if(!x.time)return'';const [start,end]=x.time.split(' - ');if(!x.double)return x.time;const a=start.split(':').map(Number),b=end.split(':').map(Number),minutes=(b[0]*60+b[1]-a[0]*60-a[1])*x.duration+ a[0]*60+a[1],finish=String(Math.floor(minutes/60)%24).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0');return start+' - '+finish}
-const isForeignCourse=x=>/^(ENGLISCH|SPANISCH|FRANZOESISCH|LATEIN|GRIECHISCH|ITALIENISCH|RUSSISCH|CHINESISCH)$/.test(subjectKey(subjectName(x.fach)));
+const isForeignCourse=x=>/^(SPANISCH|FRANZOSISCH|FRANZOESISCH|LATEIN)$/.test(subjectKey(subjectName(x.fach)));
 function combineForeignLessons(list){
  const output=[];
  for(const x of list){
    const match=isForeignCourse(x)?output.find(v=>v.foreignGroup&&v.startHour===x.startHour&&v.endHour===x.endHour&&v.time===x.time):null;
    if(match){match.foreignOptions.push(x.fach);continue}
-   if(isForeignCourse(x))output.push({...x,foreignGroup:true,foreignOptions:[x.fach],fach:'Fremdsprache 2',teacher:'',raum:''});
+   if(isForeignCourse(x))output.push({...x,foreignGroup:true,foreignOptions:[x.fach],fach:'2. Fremdsprache',teacher:'',raum:''});
    else output.push(x);
  }
  return output;
