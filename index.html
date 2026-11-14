@@ -577,7 +577,7 @@ function privacyGateView(){
 }
 function loginView(){
   document.body.classList.remove('is-loading');$('#nav').innerHTML='';
-  $('#app').innerHTML=brand+`<h1>Willkommen</h1><p class="sub">Dein Stundenplan, Aufgaben und Termine – zusammen an einem Ort.</p>${err?`<p class="err">⚠️ ${esc(err)}</p>`:''}
+  $('#app').innerHTML=brand+`<h1>Willkommen</h1><p class="sub">Dein Stundenplan, Aufgaben und Termine – zusammen an einem Ort.</p><section class="notice"><span class="notice-icon">🔐</span><div><b>Mit deinen Schulportal-Hessen-Daten anmelden</b><br>Verwende deinen gewohnten Benutzernamen und dein Passwort vom Schulportal.</div></section>${err?`<p class="err">⚠️ ${esc(err)}</p>`:''}
   <form id="login" class="card"><input class="full" name="sq" id="sq" placeholder="Schule suchen (Name, Ort oder Nummer)" autocomplete="off" required><input type="hidden" name="school" id="sid"><div id="sres" class="full"></div>
   <input class="full" name="username" placeholder="vorname.nachname" autocomplete="username" required>
   <input class="full" type="password" name="password" placeholder="Passwort" autocomplete="current-password" required>
