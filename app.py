@@ -420,6 +420,12 @@ def privacy_page():
     return FileResponse(Path(__file__).resolve().parent / "privacy.html", headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/agb")
+def terms_page():
+    from pathlib import Path
+    return FileResponse(Path(__file__).resolve().parent / "agb.html", headers={"Cache-Control": "no-cache"})
+
+
 @app.get("/api/privacy/status")
 def privacy_status(x_token: str = Header("")):
     p = decode_token(x_token)
